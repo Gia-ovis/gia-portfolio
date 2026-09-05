@@ -1,0 +1,1149 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; }
+
+/* ============================================================
+   比例换算表　分母：横 1672　纵 941
+   ============================================================ */
+:root {
+    --col-side:  13.2775%;   /* 222 / 1672 */
+    --col-sash:  27.2727%;   /* 456 / 1672 */
+    --col-mid:   18.8995%;   /* 316 / 1672 */
+
+    --row-top:    4.8884%;   /*  46 / 941 */
+    --row-band:  86.9288%;   /* 818 / 941 */
+    --row-sill:   8.1828%;   /*  77 / 941 */
+
+    --frame:      #CADAE6;
+    --frame-edge: #A1BACA;
+
+    /* 图标：固定原尺寸，不随视口缩放。
+       --avatar-size 现在只有窄屏（见 @media 里的覆盖值）在用，
+       桌面版头像尺寸跟随画布的 %，见下面 --avatar-width / --pixel-avatar-width */
+    --avatar-size: 155px;
+    /* social-link 图标：原来是写死 50px，现在改成 vw——用 vw 不用 %，
+       是因为这个变量会被 .social-links（grid track）、.social-link、
+       .icon-content 等好几层不同 containing block 的元素消费，vw 不受
+       各自 containing block 影响，跟 --avatar-width-vw 是同一个理由。
+       50/1672=2.9904vw，跟画布整体缩放系统（全站以 1672 为宽度基准）
+       保持一致 */
+    --icon-size:   2.9904vw;   /* 50 / 1672，1672 基准下等于 50px */
+    --icon-gap:    1.0766vw;   /* 18 / 1672，1672 基准下等于 18px */
+
+    --intro-ease: cubic-bezier(.4, 0, .2, 1);
+
+    /* ============================================================
+       收起/展开动画：四段严格顺序，互不重叠。
+       收起（去掉 body.intro，即点 View my work）：
+         A     0    → .25s   只有文字淡出，头像和墙体都不动
+         Flip  .25s → .75s   头像绕 Y 轴翻硬币（0deg→180deg），selfie 转
+                              到背面消失、像素头像转到正面出现——纯 3D
+                              翻转，不再靠 opacity 交叉淡化；头像位置/
+                              尺寸全程不变（画布 758/231/155×155）
+         Wall  .75s → 1.35s  头像已经翻完了，墙体才开始收缩：
+                              left/width 收到 286px，opacity 全程恒为 1；
+                              .glass-layer 同步淡出；两侧作品卡片同步
+                              淡入解模糊
+         （瞬间 1.35s）        宽度动画结束的瞬间，JS 把墙体设为
+                              visibility:hidden——不是淡出，是直接消失
+         E     1.35s → 1.65s 社交图标 + 作品图全部同时淡入，不错峰
+       展开（点 mid_panel 里的像素头像）：顺序完全反过来——
+         E'    0    → .3s    图标+作品图先淡出
+         Wall' .3s  → .9s    墙体 visibility 恢复，从 286px 长回 1236px
+         Flip' .9s  → 1.4s   墙体展开完了，头像才翻回正面（像素→selfie）
+         A'    1.4s → 1.65s  文字最后淡入
+       ============================================================ */
+
+    /* ---- 收起方向的时间点 ---- */
+    --seqA-duration:    0.25s;   /* A：0 → .25s，只有文字 */
+    --seqFlip-delay:    0.25s;
+    --seqFlip-duration: 0.5s;    /* Flip：.25 → .75s，头像翻硬币 */
+    --seqWall-delay:    0.75s;
+    --seqWall-duration: 0.6s;    /* Wall：.75 → 1.35s */
+    --seqE-delay:       1.35s;
+    --seqE-duration:    0.3s;    /* E：1.35 → 1.65s */
+
+    /* ---- 展开方向的时间点（顺序整个反过来） ---- */
+    --revE-duration:    0.3s;    /* E'：0 → .3s，图标/作品图先淡出 */
+    --revWall-delay:    0.3s;    /* Wall'：.3 → .9s（JS 同一刻恢复 visibility） */
+    --revFlip-delay:    0.9s;
+    --revFlip-duration: 0.5s;    /* Flip'：.9 → 1.4s，头像翻回正面 */
+    --revA-delay:       1.4s;
+    --revA-duration:    0.25s;   /* A'：1.4 → 1.65s */
+
+    /* .intro-panel 几何：top/height 两态永远一样，不参与任何 transition。
+       只有 left/width 会动；opacity 恒为 1，收缩期间绝不淡出——
+       墙体的"消失"完全靠 JS 在宽度 transitionend 后切 visibility（见 script.js）。
+       全部相对 1672×941 画布，都是 % */
+    --intro-top:    2.0191%;    /*  19 / 941，两态不变 */
+    --intro-height: 92.1360%;   /* 867 / 941，两态不变 */
+
+    --intro-left-expanded:  13.0383%;  /*  218 / 1672 */
+    --intro-width-expanded: 73.9234%;  /* 1236 / 1672 */
+    --intro-left-collapsed:  41.4474%; /*  693 / 1672，水平居中 (1672-286)/2 */
+    --intro-width-collapsed: 17.1053%; /*  286 / 1672 */
+
+    /* 头像跟 .intro-panel 平级，直接相对 #stage 定位（#stage 是它最近的
+       已定位祖先，position:fixed 本身就建立了定位上下文，高度 941 基准）。
+       两个状态下位置/尺寸完全一样，只靠 3D 翻转换脸，不做位移和缩放。
+       尺寸从 155×155 缩到 135×135，圆心保持不变（835.5, 298.5）：
+       left 758→768、top 221→231，各往圆心方向收 10px（半径少了 10px）
+       实测校准值 left 768 / top 231 / size 135×135（画布 1672×941） */
+    --avatar-left:  45.9330%;  /* 768 / 1672 */
+    --avatar-top:   24.5484%;  /* 231 / 941 */
+    --avatar-width:  8.0742%;  /* 135 / 1672 */
+    /* 跟 --avatar-width 数值上是同一个比例，只是单位换成 vw——%是相对
+       各自 containing block 的宽度算的，.signature 的 containing block
+       （.intro-body 卡在 .intro-panel 里）宽度跟 #stage 不是一回事，
+       直接在 .signature 上用 --avatar-width 这个 % 值做 calc() 乘法，
+       算出来的百分比会相对错误的基准去解析，等于没跟着头像实际直径缩放。
+       vw 是相对 viewport 宽度的，不受各自 containing block 影响；
+       #stage 是 position:fixed;inset:0 且 body 强制 overflow:hidden
+       没有滚动条抢宽度，100vw 就精确等于 #stage 的宽度，所以这个
+       vw 版本的值可以在页面任何地方安全地拿来乘系数，结果就是头像
+       实际渲染直径的准确比例 */
+    --avatar-width-vw: 8.0742vw;  /* 跟 --avatar-width 同一个 135/1672 比例，换成 vw 单位 */
+
+    /* mid_panel 里的像素头像换算成相对 mid_panel 自己（316×818）的
+       百分比，用同一份 left 768 / top 231 反推：
+       局部偏移 = (768-678)/316, (231-46)/818，
+       跟 .avatar 翻转后露出的背面严丝合缝地重叠在一起 */
+    --pixel-avatar-left:   28.4810%;  /*  90 / 316 */
+    --pixel-avatar-top:    22.6161%;  /* 185 / 818 */
+    --pixel-avatar-width:  42.7215%;  /* 135 / 316 */
+}
+
+
+/* ============================================================
+   背景层：cover 锁比例铺满，多余部分裁掉
+   ============================================================ */
+.bg-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+
+    background-image: url('assets/images/bg image.png');
+    background-size: cover;          /* ← 锁比例，铺满，裁切 */
+    background-position: center 45%; /* 想往上/下移就调这个百分比 */
+    background-repeat: no-repeat;
+    background-color: #C5DCEC;       /* 兜底 */
+    /* 整体调暗，给雾气擦字的文字留出对比度——原插画的山/树/云细节都还在，
+       只是暗化处理，不是换素材 */
+    filter: contrast(1.2) brightness(0.9) saturate(1.2) blur(1.0px);
+}
+
+/* ============================================================
+   玻璃层：叠在背景之上，窗框之下。
+   background-size / background-position 必须跟 .bg-layer 完全一致——
+   两层是同一张画布上抠出来的，尺寸基准不一样的话，viewport 一伸缩
+   玻璃和背景后面的插画就会错位、对不上
+   ============================================================ */
+.glass-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+
+    /* 第一层是原本的玻璃反光贴图；第二层叠一份极细的 feTurbulence 噪点
+       （SVG data URI，跟 bg glass.png 同尺寸重复平铺），避免玻璃看起来
+       是一块死板的纯色蒙层——噪点本身透明度只有 6%，不会盖掉贴图细节 */
+    background-image:
+        url('assets/images/bg glass.png'),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: cover, 200px 200px;          /* 第一层跟 .bg-layer 完全一致；噪点小尺寸重复平铺 */
+    background-position: center 45%, top left;    /* 第一层跟 .bg-layer 完全一致，否则错位 */
+    background-repeat: no-repeat, repeat;
+    background-color: rgba(255, 255, 255, 0.03);  /* 极低，只给贴图的全透明区域兜个底色，不是靠这个变白 */
+
+    /* 磨砂玻璃的"厚度感"：内阴影 + 轻微饱和度/亮度提升，而不是简单叠一层
+       灰白色——backdrop-filter 让透过玻璃看到的 .bg-layer 也带一点模糊 */
+    box-shadow:
+        inset 0 0 60px rgba(255, 255, 255, 0.12),
+        inset 0 0 12px rgba(255, 255, 255, 0.25);
+    filter: saturate(1.1) brightness(1.05);
+    backdrop-filter: blur(1px) saturate(1.1);
+    -webkit-backdrop-filter: blur(1px) saturate(1.1);
+
+    /* 只在介绍面板展开时可见，收起后消失，delay 直接复用墙体收缩/展开
+       的起始时间，保证玻璃一定跟墙体同一时刻开始淡出/淡入，不会出现
+       "墙没了雾还在"的空档 */
+    opacity: 0;
+    transition: opacity 0.5s var(--intro-ease) var(--seqWall-delay);
+}
+body.intro .glass-layer {
+    opacity: 1;   /* 也是页面加载的初始值 */
+    transition: opacity 0.5s var(--intro-ease) var(--revWall-delay);
+}
+
+/* ============================================================
+   窗框层：自由拉伸，允许变形铺满
+   ============================================================ */
+.window-frame {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+
+    width: 100%;
+    height: 100%;
+    /* object-fit 可以删了，SVG 内部的 preserveAspectRatio 已经接管 */
+
+    pointer-events: none;
+    user-select: none;
+
+    /* filter: contrast(0.90) brightness(1.02); */
+}
+
+/* ============================================================
+   内容层要浮在窗框之上
+   ============================================================ */
+.top-rail,
+.band,
+.sill {
+    position: relative;
+    z-index: 3;
+}
+
+
+/* ============================================================
+   stage：铺满视口，窗框跟着自由拉伸
+   ============================================================ */
+#stage {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    grid-template-rows: var(--row-top) var(--row-band) var(--row-sill);
+    background: transparent;
+    overflow: hidden;
+}
+
+.top-rail {
+    background: transparent;
+    box-shadow: none;
+}
+
+.band {
+    display: grid;
+    grid-template-columns:
+        var(--col-side) var(--col-sash) var(--col-mid) var(--col-sash) var(--col-side);
+    min-height: 0;
+}
+
+.side { position: relative; }   /* 窗帘区，留空——两侧的雾气效果现在由独立的
+                                    .fog-edge（#fog-left/#fog-right）负责，
+                                    见下方，不再挂在 .side 上 */
+
+/* ============================================================
+   panel：上下两格，比例 414 : 392
+   fr 会自动扣掉 gap，比例永远精确
+   ============================================================ */
+.panel {
+    display: grid;
+    grid-template-rows: 1fr 1fr;     /* ← 等分，403 : 403 */
+    gap: 1.4670%;                     /* ← 12 / 818 */
+    min-width: 0;
+    min-height: 0;
+}
+
+#left_panel,
+#right_panel {
+    background: transparent;
+    box-shadow: none;
+}
+
+/* ============================================================
+   mid_panel：首页本来就有的内容——像素头像 + 社交图标。
+   这一层不随 .intro-panel 的展开/收起做几何变形，它自己的位置和
+   大小从头到尾没有变过；.intro-panel 展开时只是"盖"在它上面。
+
+   .pixel-avatar 现在是纯静态、常驻可见的——它不再自己做任何淡入
+   动画，因为视觉上的"头像换脸"完全由浮在最上层的 .avatar 的 3D
+   翻转负责；.avatar 翻完面之后，像素面正好跟这里严丝合缝地重叠，
+   自然接手，没有缝隙。只有 .social-link 还保留自己的淡入时序。
+
+   头像用实测校准值绝对定位，不再靠 grid 行居中算出来——
+   grid-template-rows 的头像那一行改成跟头像等高的固定 18.9487%
+   （155/818），只是为了不让 .social-links 的行位置跟着偏，
+   头像本身的精确位置完全由 .pixel-avatar 的 left/top/width 决定。
+   ============================================================ */
+#mid_panel {
+    position: relative;   /* .pixel-avatar 绝对定位的参照 */
+    grid-template-rows:
+        19.6600%  /* 顶部留白 */
+        18.9487%  /* 头像占位（155 / 818），实际头像用绝对定位对齐 */
+        5.1009%   /* 头像—图标组间距 */
+        auto      /* 图标组 */
+        30.6058%; /* 底部留白 */
+    justify-items: center;
+}
+
+.pixel-avatar {
+    position: absolute;
+    left:  var(--pixel-avatar-left);
+    top:   var(--pixel-avatar-top);
+    width: var(--pixel-avatar-width);
+    aspect-ratio: 1;
+    cursor: pointer;
+}
+.pixel-avatar img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    border-radius: 50%;
+}
+/* hover 效果不在这了——现在是鼠标旁跟着走的胶囊提示，跟 content.css
+   里 Sandbox 那套 .hover-capsule 同一个模式，逻辑见 script.js 末尾。
+   底色单独覆盖成 #6D96B5（跟首页其它 hover 强调色一致）——不能直接改
+   .hover-capsule 本身的 background，那条规则是跟 Sandbox 的
+   "View Project" 胶囊共用的，改了那边也会跟着变。
+   选择器写成两个类叠加（而不是单独一个 .hover-capsule--avatar）是因为
+   content.css 在 index.html 里排在 style.css 后面加载，单类选择器
+   specificity 打平的情况下后加载的 content.css 会赢——叠两个类把
+   specificity 提高一级，不用依赖加载顺序，也不用上 !important */
+.hover-capsule.hover-capsule--avatar {
+    background: #6D96B5;
+}
+
+/* Work/Sandbox/About 三块雾气窗户的"View XXX"提示胶囊，同样是 #6D96B5，
+   跟上面头像那颗、其它首页 hover 强调色保持一致——理由和写法都跟上面
+   那条一样，同样不能直接改共用的 .hover-capsule，同样要叠两个类保证
+   specificity 赢过后加载的 content.css */
+.hover-capsule.hover-capsule--pane {
+    background: #6D96B5;
+}
+
+.social-links {
+    grid-row: 4;
+    display: grid;
+    grid-template-rows: repeat(4, var(--icon-size));
+    row-gap: var(--icon-gap);
+    justify-items: center;
+}
+
+/* 收起方向（这条规则生效时）：E 段，纯淡入，不带位移，
+   四个图标全部同一时刻开始、同一时刻结束，不错峰。
+   同时也是 hover 变形胶囊的默认（圆形）状态——宽度收在
+   --icon-size，胶囊化时只有 width/border-radius 变 */
+.social-link {
+    position: relative;   /* .icon-content/.text-content 的定位基准 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    width: var(--icon-size);
+    height: var(--icon-size);
+    border-radius: calc(var(--icon-size) / 2);
+
+    /* 胶囊描边用 box-shadow 不用 border——border 会占用 box-sizing:border-box
+       的内容区，而 .icon-content 是撑满整个 50×50 的（跟父级 overflow:hidden
+       的裁剪区正好贴边），border 一旦有宽度就会把裁剪区收窄 1px，边缘的
+       svg 圆圈描边（circle r=24.5，紧贴 50×50 视口边缘）就会被切掉一圈，
+       看起来比原图标发虚。box-shadow 是纯绘制效果，不参与盒模型，不会
+       影响裁剪区，默认状态的图标描边能保持跟原图完全一致的清晰度 */
+    box-shadow: 0 0 0 1px transparent;
+    opacity: 1;
+    transition:
+        opacity var(--seqE-duration) var(--intro-ease) var(--seqE-delay),
+        width 0.25s ease,
+        border-radius 0.25s ease,
+        box-shadow 0.25s ease;
+}
+
+/* hover/focus 时整个圆形图标变形为胶囊，内部从图标切换成文字——
+   图标和文字是同一个位置的两层堆叠（见下面 .icon-content/.text-content），
+   不是"图标+文字并排共存"。--hover-width 是每个链接各自文字实际宽度
+   （含左右 padding），JS（script.js）量出来直接写成行内样式——文字宽度
+   是字体度量决定的，不是能用 calc() 单纯算出来的几何值，量出来这点没变。
+   但字号/padding 现在改成跟 --icon-size 一起用 vw 缩放了（见下面
+   .text-content），viewport 宽度一变这两个值就会变，量一次不够用了，
+   JS 那边加了 resize 监听重新量，见 script.js 对应注释 */
+.social-link:hover,
+.social-link:focus-visible {
+    width: var(--hover-width, calc(var(--icon-size) * 2.4));   /* 120/50=2.4，JS 还没跑到之前的兜底值，同样跟着 --icon-size 缩放 */
+    border-radius: calc(var(--icon-size) / 2);
+    box-shadow: 0 0 0 1px #BAC9D5;   /* 跟图标 svg 自带的 circle stroke 颜色统一，
+                                         胶囊态和圆形态的描边视觉上是同一条线延续变形，
+                                         不是换了一种颜色 */
+}
+
+.icon-content,
+.text-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.15s ease;
+}
+.icon-content {
+    width: var(--icon-size);
+    height: var(--icon-size);
+    opacity: 1;
+}
+.text-content {
+    white-space: nowrap;
+    padding: 0 calc(var(--icon-size) * 0.48);   /* 24/50=0.48 */
+    font-family: var(--font-avenir);
+    font-weight: 500;
+    font-size: calc(var(--icon-size) * 0.4);   /* 20/50=0.4，字号也跟 --icon-size 一起缩放 */
+    color: #6D96B5;
+    opacity: 0;
+    pointer-events: none;
+}
+.social-link:hover .icon-content,
+.social-link:focus-visible .icon-content {
+    opacity: 0;
+    transition-delay: 0s;
+}
+.social-link:hover .text-content,
+.social-link:focus-visible .text-content {
+    opacity: 1;
+    transition-delay: 0.08s;   /* 图标先淡出，文字紧接着淡入，避免中途重叠 */
+}
+
+/* 展开态：页面加载初始状态 + 点头像展开的目标状态——
+   E' 段，图标最先淡出，不带位移，快速一起消失 */
+body.intro .social-link {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--revE-duration) var(--intro-ease) 0s;
+}
+
+.social-icon {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* ============================================================
+   project-frame：格子本身自由拉伸，不锁比例。
+   贴边的雾气玻璃（不再是浮在窗景上的白卡片缩略图），格子之间的
+   分隔线由 .window-frame 那张 SVG 窗框负责，这里全宽全高。
+   ============================================================ */
+.project-frame {
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+
+    min-width: 0;
+    min-height: 0;
+
+    /* 收起方向：跟墙体收缩同步，Wall 段 */
+    transition: opacity var(--seqWall-duration) var(--intro-ease) var(--seqWall-delay);
+}
+
+/* ============================================================
+   fog-edge：左右两条纯装饰雾气玻璃（#fog-left / #fog-right），跟
+   .project-frame 那四格是两套不同的定位方式——用 % 换算自设计稿的
+   1672×941 基准画布（207/1672、46/941、75/941），跟着窗框一起等比
+   缩放，不会在其他视口宽度下跟窗帘错位。层级上故意插在 .bg-layer
+   （z0）之上、.window-frame（z2）之下，这样窗框上的窗帘图案永远盖
+   在雾气上面，雾气就算跟窗帘范围有重叠也不会挡住窗帘。
+   ============================================================ */
+.fog-edge {
+    position: absolute;
+    top: var(--row-top);   /* 4.8884% = 46 / 941，跟顶框共用同一个换算值 */
+    bottom: 7.9703%;        /* 75 / 941 */
+    width: 12.3804%;        /* 207 / 1672 */
+    z-index: 1;
+    overflow: hidden;
+    cursor: pointer;
+
+    transition: opacity var(--seqWall-duration) var(--intro-ease) var(--seqWall-delay);
+}
+#fog-left  { left: 0; }
+#fog-right { right: 0; }
+
+/* ============================================================
+   fog-glass：真正的"玻璃"区域，canvas 的定位基准，铺满自己的父容器
+   （.project-frame 或 .fog-edge）。
+   内阴影模拟磨砂玻璃的厚度感——中间四格用的模糊半径比较大，两侧那两条
+   窄玻璃（只有 207px 宽）如果用一样的半径，40px 的内阴影会吃掉将近一半
+   宽度，整条都发白，所以两侧单独用了更小、更淡的一份，见下面
+   #fog-left/#fog-right 那条覆盖规则。
+   ============================================================ */
+.fog-glass {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    box-shadow:
+        inset 0 0 40px rgba(255, 255, 255, 0.15),
+        inset 0 0 10px rgba(255, 255, 255, 0.25);
+}
+#fog-left .fog-glass,
+#fog-right .fog-glass {
+    box-shadow:
+        inset 0 0 16px rgba(255, 255, 255, 0.08),
+        inset 0 0 4px rgba(255, 255, 255, 0.12);
+}
+
+/* ============================================================
+   fog-canvas：雾气擦字交互画布，逻辑见 fog.js。canvas 本身透明，
+   擦开的地方露出的是页面本身的 .bg-layer 插画（见上面对 .bg-layer
+   的调暗处理），不是另画一层背景。
+   跟原来 .project-image 一样有独立于格子本身的淡入淡出节奏——格子
+   （现在没有背景可淡了）走 Wall 段，画布内容额外再等到 E 段才淡入。
+
+   之前这里加过 backdrop-filter 做"透光感"，撤掉了——backdrop-filter
+   架在一块每帧都在用 requestAnimationFrame 重绘的 canvas 上面，是已知
+   容易触发 GPU 合成层错误重绘的组合（Chrome/Safari 都有过这类问题），
+   About/song 那两块出现的深色云团状色块就是这个导致的合成artifact，
+   不是 fog.js 里雾气逻辑本身画错了。透光/降饱和这类质感如果还需要，
+   应该在 drawFogBase() 里用 canvas 自己的 ctx.filter 或调色实现，
+   不要再用 CSS backdrop-filter 盖在动态 canvas 上面。
+   ============================================================ */
+.fog-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    cursor: crosshair;
+    touch-action: none;
+
+    opacity: 1;
+    transition:
+        filter  var(--seqWall-duration) var(--intro-ease) var(--seqWall-delay),
+        opacity var(--seqE-duration) var(--intro-ease) var(--seqE-delay);
+}
+/* Work/Sandbox/About 这三块点了会跳转到对应内容浮层（跟 fog.js 里
+   OVERLAY_KEYS 是同一份名单），换成手型指针提示"这里能点"——crosshair
+   那个默认值留给 song（":)"）和两侧纯装饰的窄玻璃，那几块只能划雾气，
+   点了没反应，保留"这里只能划"的提示更准确 */
+[data-fog="work"] .fog-canvas,
+[data-fog="play"] .fog-canvas,
+[data-fog="about"] .fog-canvas {
+    cursor: pointer;
+}
+
+/* ============================================================
+   glow-canvas：hover/点击发光层，叠在 .fog-canvas 之上，逻辑见 fog.js
+   的 updateGlow()。单独一块 canvas 而不是画在雾气 canvas 上——雾气层
+   是靠 destination-out/source-over 持续累积的，不会每帧清空，发光如果
+   画在那上面会越叠越亮、退不回去；这一层每帧 clearRect 后重画，才能
+   正常随 hover 淡入淡出。pointer-events:none 让鼠标事件穿透到下面的
+   .fog-canvas，不影响擦雾气的交互。
+   ============================================================ */
+.glow-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    pointer-events: none;
+}
+
+/* intro 展开时两侧退后：格子淡出（Wall' 段，从一开始就动，delay 0），
+   画布额外再淡出+模糊（E' 段，最先，不错开） */
+body.intro .project-frame,
+body.intro .fog-edge {
+    opacity: .4;
+    pointer-events: none;
+    transition: opacity var(--seqWall-duration) var(--intro-ease) 0s;
+}
+body.intro .fog-canvas {
+    filter: blur(3px);
+    opacity: 0;
+    transition:
+        filter  var(--seqWall-duration) var(--intro-ease) 0s,
+        opacity var(--revE-duration) var(--intro-ease) 0s;
+}
+
+/* ============================================================
+   窗台
+   ============================================================ */
+.sill {
+    background: transparent;
+    box-shadow: none;
+}
+
+/* ============================================================
+   intro-panel：盖在首页之上的"墙"，z-4。只负责背景 + 文字。
+   top / height 两态永远一样，绝不参与 transition。
+   opacity 恒为 1，收缩/展开过程中绝不淡出——它是被 JS 直接切
+   visibility 来"消失/出现"的，不是靠透明度过渡（见 script.js）。
+   注意：墙体现在要等头像翻完面（Flip 段结束，.75s）才开始收缩，
+   不再跟头像动画同步开始。
+   ============================================================ */
+.intro-panel {
+    position: absolute;
+    top: var(--intro-top);
+    height: var(--intro-height);
+    left: var(--intro-left-collapsed);
+    width: var(--intro-width-collapsed);
+    z-index: 4;
+    opacity: 1;   /* 永远是 1，不参与任何过渡 */
+
+    background: linear-gradient(180deg, #F5F4F4 0%, #F6F6F6 100%);
+    box-shadow: inset 0 0 0 1px #C1CDD6;  /* 内侧描边，不占盒子尺寸，box-sizing 保持 border-box */
+    overflow: hidden;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 0 6%;
+
+    /* 收起方向：left/width 走 Wall 段，实打实地收缩到 286px，中途 opacity
+       完全不变。收缩结束那一刻该消失，靠 script.js 监听这条 transition
+       的 transitionend（propertyName === 'width'）再把 visibility 设成
+       hidden——不用 CSS delay 硬编时间，避免跟实际动画时长对不上 */
+    transition:
+        left  var(--seqWall-duration) var(--intro-ease) var(--seqWall-delay),
+        width var(--seqWall-duration) var(--intro-ease) var(--seqWall-delay);
+}
+body.intro .intro-panel {
+    left: var(--intro-left-expanded);
+    width: var(--intro-width-expanded);
+
+    /* 展开方向：left/width 走 Wall' 段，从 --revWall-delay 开始长开
+       （这个时间点也是 script.js 里 EXPAND_WALL_DELAY_MS，JS 在这一刻
+       把 visibility 改回 visible，长开的瞬间墙体已经看得见了） */
+    transition:
+        left  var(--seqWall-duration) var(--intro-ease) var(--revWall-delay),
+        width var(--seqWall-duration) var(--intro-ease) var(--revWall-delay);
+}
+
+/* 墙体投在下面的阴影：跟 .intro-panel 是平级、同一个绝对定位基准
+   （#stage），不是它的子元素——.intro-panel 自己 overflow:hidden，
+   阴影要露在墙体底边以外的话，放在里面会被直接裁掉。
+   位置：top 卡在墙体底边那个像素点（--intro-top + --intro-height，
+   墙体的 top/height 两态永远不变，所以这个值是个常量，不用再分两态写）。
+   宽度：换算基准是整个画布的 1672px（1244/1672=74.4019%，展开态时
+   跟 --intro-width-expanded 的 1236/1672=73.9234% 只差 8px）——所以
+   写成"墙体当前宽度 + 8px（画布基准）"，收起动画时阴影用同一条
+   transition 跟墙体的 width 同步变化，不是收起后还停在固定宽度 */
+.wall-shadow {
+    position: absolute;
+    top: calc(var(--intro-top) + var(--intro-height));
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(var(--intro-width-collapsed) + 8px);
+    /* 高度不能用 aspect-ratio 跟宽度反推——宽度公式带了固定 8px 偏移量，
+       不是严格等比缩放，反推出来的高度比例会被这 8px 污染。改成直接
+       按 #stage（这个元素的绝对定位基准，position:fixed;inset:0，
+       高度恒为 100vh，是明确数值不是 auto）的高度取百分比：
+       11/941=1.1690%，跟画布整体高度独立地保持 1672×941 基准里
+       11px 那个比例，不再依赖自身 width 的计算结果 */
+    height: 1.1690%;
+    background-color: #E3E9EC;
+    z-index: 4;
+
+    transition: width var(--seqWall-duration) var(--intro-ease) var(--seqWall-delay);
+}
+body.intro .wall-shadow {
+    width: calc(var(--intro-width-expanded) + 8px);
+    transition: width var(--seqWall-duration) var(--intro-ease) var(--revWall-delay);
+}
+
+/* ---- 展开态文字：签名 + 简介 + 按钮 ---- */
+.intro-body {
+    text-align: center;
+    opacity: 0;
+    transform: translateY(8px);
+    pointer-events: none;
+
+    /* .avatar 是平级独立浮层，不在这个 flex 流里，所以要自己留出头像的
+       高度，原来整段写死 36.8757vh（从画布 y=366，头像底=top 231+135，
+       算到 (366-19)/941），问题是这个值只考虑了"头像底边在 941 高度
+       基准下的百分比"，完全没跟着头像实际直径（宽度基准的 %，会随
+       viewport 宽度单独变化）走——宽高比偏离 1672:941 时，头像底边跟
+       这个 margin-top 会各走各的，中间的嵌入视觉就跟着跑掉（本来 -2px
+       的嵌入量比这个漂移小两个数量级，完全盖不住）。
+       改成拆两段算，都用 viewport 相对单位（vh/vw），不用 % ——避免
+       在 .signature 那次踩过的"% 是相对自己 containing block 算的，
+       不是相对 #stage"那个坑：
+         头像顶到 #stage 顶的距离：--avatar-top(24.5484%) 换算成
+         vh ≈ 24.5484vh（#stage 高度恒为 100vh，这个换算安全）
+         加头像实际直径：var(--avatar-width-vw)（宽度基准，随宽度缩放）
+         减 .intro-panel 顶到 #stage 顶的距离：--intro-top(2.0191%)
+         换算成 vh ≈ 2.0191vh（margin-top 是相对 .intro-panel 局部坐标算的，
+         要把头像的 #stage 绝对坐标转成 intro-panel 局部坐标）
+       24.5484vh - 2.0191vh = 22.5292vh，这就是下面这行的常数项。
+       签名自己再用 margin-top 的 calc() 嵌进去（见 .signature 那条规则，
+       现在也是按 --avatar-width-vw 的比例算，不是写死 px 了） */
+    margin-top: calc(22.5292vh + var(--avatar-width-vw));
+
+    /* 收起方向：A 段，第一个动，头像和墙体都还没开始动 */
+    transition: opacity var(--seqA-duration) ease, transform var(--seqA-duration) ease;
+}
+body.intro .intro-body {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+
+    /* 展开方向：A' 段，最后一个动 */
+    transition:
+        opacity   var(--revA-duration) var(--intro-ease) var(--revA-delay),
+        transform var(--revA-duration) var(--intro-ease) var(--revA-delay);
+}
+
+/* ============================================================
+   avatar：跟 .intro-panel 平级的独立浮层，z-5（盖在墙体之上）。
+   位置/尺寸两态完全一样（画布 758/221/155×155），全程不做位移和
+   缩放——头像的"换脸"完全靠真正的 3D 翻转（rotateY 0↔180deg），
+   不是 opacity 交叉淡化。
+
+   三层结构，每一层职责单一，缺一层都会导致 backface-visibility 失效：
+     .avatar       只管定位/尺寸/透视，overflow 必须 visible
+     .avatar-flip  只管 3D 翻转（preserve-3d + rotateY），
+                   overflow 同样必须 visible
+     .face         真正裁圆的地方（border-radius + overflow:hidden），
+                   裁剪被隔离在最内层——overflow:hidden 只要跟
+                   preserve-3d 出现在同一个元素上，很多浏览器会把
+                   3D 上下文强行拍扁，导致两面都看得见（原来 .avatar
+                   和 .avatar-mask 都身兼裁剪+3D 两职，就是踩了这个坑）
+   .face 还必须有不透明背景色，否则翻转到中途两面会透出叠在一起，
+   看起来像重影。
+
+   收起方向：Flip 段（.25s→.75s），跟文字撤退（A 段）衔接上，
+   墙体这时候还没开始动。
+   展开方向：Flip' 段（.9s→1.4s），要等墙体完全展开之后才翻回来。
+   ============================================================ */
+.avatar {
+    position: absolute;
+    left:  var(--avatar-left);
+    top:   var(--avatar-top);
+    width: var(--avatar-width);
+    aspect-ratio: 1;
+    z-index: 5;
+    overflow: visible;      /* 关键：这一层绝不能裁剪 */
+    pointer-events: none;   /* 默认纯展示，不接收点击——收起态它跟
+                                #pixelAvatar 严丝合缝重叠，z-index 又比
+                                pixelAvatar 高，如果这里常年开着点击，会
+                                挡住 pixelAvatar 自己的点击/展开逻辑（见
+                                script.js）。只在展开态（body.intro，也就是
+                                正面 selfie 露出来的这一刻）才需要能点，
+                                下面单独开 */
+    -webkit-perspective: 1200px;
+    perspective: 1200px;    /* 透视放在最外层 */
+}
+body.intro .avatar {
+    pointer-events: auto;   /* 展开态：点头像也能收起墙体，跟点 Enter the wall 等效 */
+    cursor: pointer;
+}
+
+.avatar-flip {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: visible;      /* 同样不能裁剪 */
+
+    -webkit-transform-style: preserve-3d;
+    transform-style: preserve-3d;   /* 只有这一层做 3D */
+
+    /* 收起方向（这条规则生效时）：转到 180deg，露出背面（像素头像） */
+    -webkit-transform: rotateY(180deg);
+    transform: rotateY(180deg);
+    transition: transform var(--seqFlip-duration) var(--intro-ease) var(--seqFlip-delay);
+}
+body.intro .avatar-flip {
+    /* 展开方向：转回 0deg，露出正面（selfie）；也是页面加载的初始值 */
+    -webkit-transform: rotateY(0deg);
+    transform: rotateY(0deg);
+    transition: transform var(--revFlip-duration) var(--intro-ease) var(--revFlip-delay);
+}
+
+.face {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;   /* 裁圆放在这一层 */
+    overflow: hidden;     /* 裁剪只发生在最内层 */
+    background: #F5F4F4;  /* 不透明底，防止翻转过程中透出后面那张 */
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+}
+.face.front {
+    -webkit-transform: rotateY(0deg);
+    transform: rotateY(0deg);
+}
+.face.back {
+    -webkit-transform: rotateY(180deg);
+    transform: rotateY(180deg);
+}
+
+.face img {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+.face.front img { object-fit: cover; }
+.face.back img {
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    object-fit: contain;   /* logo.svg viewBox 是 155×155 正方形，contain+padding:0 正好填满，不会留白 */
+    image-rendering: pixelated;
+}
+
+.signature {
+    /* 嵌入头像照片内的量：公式结构不变（还是按 --avatar-width-vw 头像
+       实际直径的比例算，跟着头像一起缩放，不是写死 px），这次改的是
+       代入的目标嵌入深度——从原来 1672px 基准下的 ~2px 换成 10px，
+       系数相应从 -2/135=-1.48148% 换成 -10/135=-7.40741%（135 是
+       1672 基准下头像直径的 px 值，见 --avatar-width 那条注释） */
+    margin-top: calc(var(--avatar-width-vw) * -0.0740741);
+    font-family: "HanziPen TC", "HanziPen SC", "Yuanti TC", cursive;
+    font-weight: bold;
+    font-size: clamp(24px, 2.15vw, 36px);   /* 36px 是 1672 基准下的值 */
+    color: #6b95bd;
+}
+
+/* opening-scene-text / enter-wall-btn 是 .bio / .cta 的新版样式规格——
+   字体栈直接复用 content.css 的 --font-avenir（index.html 同时加载了
+   content.css，:root 变量全站通用，不用在这里重复定义一遍系统字体栈）。
+   排版用的 margin-top（跟 .signature/按钮之间的间距）保持不变，这次
+   规格只改字体/颜色/宽度这些，没提排版间距 */
+.opening-scene-text {
+    font-family: var(--font-avenir);
+    font-weight: 350;   /* Book */
+    font-size: 24px;
+    color: #697784;   /* Text/Secondary */
+    /* 原来写死 536px，实测比内容实际需要的宽度（fit-content 量出来
+       523.36px，1672 基准/24px 字号下）宽了十几 px，像是手动量的
+       估算值，不是精确量出来再维护的。现在三行文字已经靠 <br> 强制
+       分行（见 index.html），不存在自动换行需要靠宽度控制的情况，
+       改成 fit-content 让浏览器按实际内容（最长的第二行）自己算，
+       不用再手动维护这个数字 */
+    width: fit-content;
+    margin-top: calc(4.2508vh + 20px);   /* 原来的 40/941 基础上再往下移 20px */
+    /* .intro-body 上有 text-align:center（给签名/按钮用的），会被这个
+       536px 宽的段落继承，导致段落自己换行后每一行都居中对齐，不是
+       整段文字左对齐——这里覆盖回 left，段落内部文字左对齐；margin
+       左右 auto 让这个定宽的块作为一个整体在 .intro-body 里居中，
+       两件事分开处理，跟 About 页标题/正文那次"group 内部左对齐、
+       整体居中"是同一个模式 */
+    text-align: left;
+    margin-left: auto;
+    margin-right: auto;
+}
+/* 1024-1440px 中间响应区间：style.css 里目前只有 max-width:800px 这一档
+   移动端断点，没有现成的 1024-1440px 断点可复用，这里新起一个。
+   没有单独设置 line-height，走的是浏览器默认的 normal（相对字号算的，
+   不是写死的 em 值），字号改小行距会同比例跟着变小，不会变得不协调，
+   不用额外调行高 */
+@media (max-width: 1439px) {
+    .opening-scene-text {
+        font-size: 20px;
+    }
+}
+
+/* 1200-1439px 维持 20px 不变，<1200px 再细分一档到 18px。这条必须写在
+   上面 max-width:1439px 之后——两条都是 max-width，视口 ≤1199px 时两个
+   条件同时成立，选择器 specificity 也相同，靠源码顺序决出胜负，写在
+   后面这条（18px）才会盖过前面那条（20px） */
+@media (max-width: 1199px) {
+    .opening-scene-text {
+        font-size: 18px;
+    }
+}
+
+.opening-scene-text .highlight {
+    font-weight: 500;   /* Heavy */
+    color: #4B80A8;   /* 改回这一版之前用过的颜色（中间短暂换成过 #6D96B5，
+                          现在改回来）。不是 --brand 的 #0072CB，项目里也没有
+                          现成变量对应这个色值，先直接写 hex */
+}
+
+/* 之前按 (743,721)/1672×941 反推的 44.44%/76.62% 相对 #stage 定位，
+   实测视觉上并没有水平居中——说明设计稿那组坐标本身大概率是手动摆放
+   的近似值，不是"精确居中"的意图。改回明确的水平居中，定位基准也
+   改回 .intro-panel（白色内容面板）自己，不是整个 #stage 画布：
+   .intro-panel 本来就是 position:absolute，是现成的定位基准，按钮挪回
+   去做它的直接子元素即可。
+   展开态才显示/可点的逻辑还留在按钮自己身上（opacity/pointer-events
+   随 body.intro 切换），跟挪回 .intro-panel 内部与否无关，不用再依赖
+   .intro-body 那层 */
+.enter-wall-btn {
+    position: absolute;
+    left: 50%;
+    /* 直接指定的目标值，回到上一次改动之前用过的 82.99%。这个百分比是
+       相对 .intro-panel 自己的高度算的，不是 941 画布——如果之后还要
+       按"画布 Npx"换算增量调整，记得 .intro-panel 高度是画布的
+       92.136%（867/941），跟直接按 941 算的增量会有约 6%的比例误差
+       （详见前几次改动的记录），量级上是几 px，视觉基本看不出来 */
+    top: 82.99%;
+    transform: translateX(-50%) translateY(8px);   /* translateY(8px) 是收起态的初始位移，见下面 opacity/transform 那组过渡 */
+
+    font-family: var(--font-avenir);
+    font-weight: 400;   /* Roman */
+    font-size: 20px;
+    color: #4B80A8;
+    background: transparent;
+    border: 1px solid #4B80A8;
+    width: 185px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;   /* 固定尺寸之后改用 flex 居中文字，不再靠 padding 撑开 */
+    cursor: pointer;
+
+    opacity: 0;
+    pointer-events: none;
+    /* 收起方向：跟 .intro-body 同一个 A 段时序 */
+    transition:
+        background .25s ease,
+        color .25s ease,
+        opacity var(--seqA-duration) ease,
+        transform var(--seqA-duration) ease;
+}
+body.intro .enter-wall-btn {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+    pointer-events: auto;
+    /* 展开方向：跟 .intro-body 同一个 A' 段时序 */
+    transition:
+        background .25s ease,
+        color .25s ease,
+        opacity   var(--revA-duration) var(--intro-ease) var(--revA-delay),
+        transform var(--revA-duration) var(--intro-ease) var(--revA-delay);
+}
+.enter-wall-btn:hover,
+.enter-wall-btn:focus-visible {
+    background: #4B80A8;
+    color: #fff;
+}
+/* 1024-1440px 中间响应区间，跟 .opening-scene-text 用同一个断点。
+   决定按钮视觉大小的属性一共四个：font-size(20px)、border(1px)、
+   width(185px)、height(50px)——没有 padding，文字靠 flex 居中撑开，
+   不是靠 padding 撑开。全部按现有值 × 0.9 缩小，定位（left/top/
+   transform）不在这条规则里，不受影响 */
+@media (max-width: 1439px) {
+    .enter-wall-btn {
+        font-size: 18px;      /* 20 × 0.9 */
+        border-width: 0.9px;  /* 1 × 0.9 */
+        width: 166.5px;       /* 185 × 0.9 */
+        height: 45px;         /* 50 × 0.9 */
+    }
+}
+
+/* 1200-1439px 维持 90% 不变，<1200px 再缩小到基准值的 81%——是在 90%
+   的基础上再乘 0.9（不是从 100% 重新减 10%），20×0.9×0.9=16.2 这样算的。
+   必须写在上面 max-width:1439px 之后：两条都是 max-width，视口
+   ≤1199px 时两个条件同时成立，selector specificity 也相同，源码顺序
+   决出胜负，写在后面这条（81%）才会盖过前面那条（90%），跟
+   .opening-scene-text 新增 1199px 断点是同一个道理 */
+@media (max-width: 1199px) {
+    .enter-wall-btn {
+        font-size: 16.2px;    /* 20 × 0.81 */
+        border-width: 0.81px; /* 1 × 0.81 */
+        width: 149.85px;      /* 185 × 0.81 */
+        height: 40.5px;       /* 50 × 0.81 */
+    }
+}
+
+/* 超大屏（>1920px）新增一档。跟上面 max-width:1439px 是互斥区间
+   （一个视口不可能同时 ≤1439 又 ≥1921），1440-1920px 之间维持基准值
+   不变，两条规则不会冲突/重叠。
+   .enter-wall-btn 同样是那四个决定视觉大小的属性（font-size/border/
+   width/height，没有 padding），全部按基准值 × 1.2 放大（原来是 1.1，
+   改成 1.2） */
+@media (min-width: 1921px) {
+    .opening-scene-text {
+        font-size: 28px;
+    }
+    .enter-wall-btn {
+        font-size: 24px;      /* 20 × 1.2 */
+        border-width: 1.2px;  /* 1 × 1.2 */
+        width: 222px;         /* 185 × 1.2 */
+        height: 60px;         /* 50 × 1.2 */
+    }
+}
+
+/* ============================================================
+   窄屏：单栏堆叠
+   .intro-panel 这套浮层展开/收起是桌面窗口两侧留白足够时才有意义的
+   交互，窄屏直接不展示这一层，只保留 mid_panel（头像+图标）常驻显示。
+
+   重要：桌面版"页面加载时 opacity:0，靠 body.intro 控制显隐"的规则
+   （.social-link / .project-image / .project-frame）是通用规则，不是
+   桌面专属——而窄屏没有展开/收起交互，body 会一直带着 .intro（初始
+   class，永远不会被移除），所以必须在这里强制把它们都摁回 opacity:1，
+   否则窄屏会一直是空白/看不见任何东西
+   ============================================================ */
+@media (max-width: 800px) {
+    html, body { overflow: auto; }
+
+    :root {
+        --avatar-size: 88px;
+        --icon-size: 34px;
+        --icon-gap: 18px;
+    }
+
+    #stage {
+        position: relative;
+        min-height: 100vh;
+        grid-template-rows: 20px 1fr 34px;
+    }
+    .band {
+        grid-template-columns: 1fr;
+        grid-auto-rows: min-content;
+        gap: 14px;
+        padding: 0 16px;
+    }
+    .side { display: none; }
+    .fog-edge { display: none; }   /* 固定像素尺寸的装饰玻璃，窄屏单栏布局下没有意义 */
+    .panel { aspect-ratio: 456 / 818; }
+
+    .intro-panel { display: none; }
+    .avatar { display: none; }   /* 桌面版那个浮动 selfie/像素翻转头像，窄屏不展示 */
+
+    #mid_panel {
+        order: -1;
+        aspect-ratio: auto;
+        min-height: 90px;
+        padding: 24px 0;
+
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+    }
+    .pixel-avatar {
+        position: static;   /* 桌面版是绝对定位对齐实测坐标，窄屏改回正常文档流 */
+        width: var(--avatar-size);
+    }
+    .social-links {
+        grid-template-rows: none;
+        display: flex;
+        flex-direction: row;
+        gap: var(--icon-gap);
+    }
+    .social-link,
+    body.intro .social-link {
+        opacity: 1;
+        pointer-events: auto;
+        transition: none;
+    }
+    .project-frame,
+    body.intro .project-frame {
+        opacity: 1;
+        pointer-events: auto;
+        transition: none;
+    }
+    .fog-canvas,
+    body.intro .fog-canvas {
+        opacity: 1;
+        filter: none;
+        transition: none;
+    }
+}
+
+/* ============================================================
+   Work/Play/About 内容浮层：真浮层，不是跳转到 content.html——#stage
+   （窗户门厅）留在背后不卸载，遮罩+面板浮在最上层。逻辑见 overlay.js，
+   面板里塞进来的内容（banner/编号/项目卡片那套排版）用的是 content.css，
+   这里只管遮罩/面板本身的壳子。
+   ============================================================ */
+.content-overlay-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+
+    background: rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+}
+.content-overlay-scrim.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* 面板顶部原来留了 top:40px（移动端 24px），本意是配合顶部圆角的视觉
+   效果，但实际效果是浏览器视口顶部到 banner 之间空出一段纯装饰性留白。
+   改成 top:0（留白全部挪到 banner 后面）又觉得顶部一点呼吸感都没有太
+   突兀，折中过 20/20，现在再收到 10/10——顶部留 10px，banner 后面
+   （见下面 body.overlay-open .content-section--work）留另外 10px */
+.content-overlay-panel {
+    position: fixed;
+    top: 10px;
+    left: 40px;
+    right: 40px;
+    bottom: 0;
+    z-index: 91;
+
+    background: #fff;
+    border-radius: 16px 16px 0 0;   /* 只有顶部两角是圆角 */
+    overflow: hidden;               /* 内容里 banner 的满宽色块会被这里裁到面板宽度 */
+    box-shadow: 0 -8px 40px rgba(20, 30, 50, 0.25);
+
+    opacity: 0;
+    transform: translateY(24px);
+    pointer-events: none;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.content-overlay-panel.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.overlay-body {
+    height: 100%;
+    overflow-y: auto;
+}
+
+/* 顶部留白的另一半——#work 是浮层里 banner 紧跟着的第一个内容区块，
+   这 10px 落在它自己原有的 padding-top:0 之上，跟 .work-banner 自带的
+   160px margin-bottom 叠加，变成 170px。只在浮层打开时生效
+   （body.overlay-open），content.html 独立访问时 #work 还是原来的
+   padding-top:0，排版不受影响 */
+body.overlay-open .content-section--work {
+    padding-top: 10px;
+}
+
+/* 浮层开着时首页背景别跟着一起滚 */
+body.overlay-open {
+    overflow: hidden;
+}
+
+@media (max-width: 800px) {
+    .content-overlay-panel { top: 12px; left: 0; right: 0; border-radius: 16px 16px 0 0; }
+    body.overlay-open .content-section--work { padding-top: 12px; }
+}
+
+/* ============================================================
+   调试读数
+   ============================================================ */
+#hud {
+    position: fixed; left: 12px; top: 12px; z-index: 100;
+    background: rgba(15, 26, 36, 0.9);
+    color: #b9d9ec;
+    border: 1px solid #2a4055;
+    padding: 10px 13px;
+    font: 10px/1.75 ui-monospace, Menlo, monospace;
+    backdrop-filter: blur(6px);
+}
+#hud b  { color: #fff; }
+#hud .g { color: #5d7f97; }
+#hud .ok { color: #4ede9b; }
+
+/* ============================================================
+   邮箱复制成功提示：屏幕底部居中弹出、停留一下、淡出，逻辑见 script.js
+   里的 showToast()——元素本身在 animationend 时被 JS 移除，2s 这个数字
+   只用改这一处，不用跟 JS 里的计时器对齐
+   ============================================================ */
+.copy-toast {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #6D96B5;
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-family: var(--font-avenir);
+    font-weight: 500;
+    font-size: 14px;
+    pointer-events: none;
+    z-index: 200;
+    animation: toastFade 2s ease forwards;
+}
+@keyframes toastFade {
+    0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.95); }
+    15%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    85%  { opacity: 1; }
+    100% { opacity: 0; }
+}

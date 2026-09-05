@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <!-- content.css 是 Work/Play/About 浮层内容（banner、001 编号、项目卡片
+         这套排版）的样式，overlay.js 会把 content.html 里对应的 section
+         原样搬进浮层——style 得跟着一起加载，不然浮层里全是没样式的裸标签 -->
+    <link rel="stylesheet" href="content.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Monda:wght@500;600&family=Montserrat:wght@500&display=swap" rel="stylesheet">
+    <title>responsive scale test</title>
+</head>
+<body class="intro">
+
+<div id="stage">
+
+    <!-- 背景：铺满不变形 -->
+    <div class="bg-layer"></div>
+
+    <!-- 玻璃：叠在背景之上，跟背景用同一套 background-size/position，锁死不会错位 -->
+    <div class="glass-layer"></div>
+
+    <!-- 左右两条纯装饰的雾气玻璃：故意放在 bg-layer 之上、window-frame
+         之下（叠放顺序见 style.css 的 .fog-edge），这样窗框上的窗帘图案
+         永远盖在雾气上面，雾气不会遮住窗帘，也就不用再算"避开窗帘"的
+         玻璃缝宽度——尺寸直接按设计稿写死（207×820，顶部46px），不响应式。
+         只有环境雾气+生长水珠，没有常驻文字/图标（data-fog="side-left/right"
+         对应 fog.js 里的 blank 类型）。 -->
+    <div class="fog-frame fog-edge" id="fog-left" data-fog="side-left">
+        <div class="fog-glass"><canvas class="fog-canvas"></canvas><canvas class="glow-canvas"></canvas></div>
+    </div>
+    <div class="fog-frame fog-edge" id="fog-right" data-fog="side-right">
+        <div class="fog-glass"><canvas class="fog-canvas"></canvas><canvas class="glow-canvas"></canvas></div>
+    </div>
+
+    <!-- 窗框：自由拉伸铺满 -->
+    <img class="window-frame" src="assets/images/whole_window_pale.svg" alt="">
+
+
+
+    <!-- 46px 顶框 -->
+    <div class="top-rail"></div>
+
+    <!-- 818px 内容带：222 / 456 / 316 / 456 / 222 -->
+    <div class="band">
+
+        <div class="side left"></div>
+
+        <div class="panel" id="left_panel">
+            <div class="project-frame fog-frame" data-fog="work">
+                <div class="fog-glass"><canvas class="fog-canvas"></canvas><canvas class="glow-canvas"></canvas></div>
+            </div>
+            <div class="project-frame fog-frame" data-fog="play">
+                <div class="fog-glass"><canvas class="fog-canvas"></canvas><canvas class="glow-canvas"></canvas></div>
+            </div>
+        </div>
+
+        <!-- 首页本来的中栏内容：像素头像 + 社交图标，一直都在这里，
+             展开态时被上面浮动的 .intro-panel 盖住，收起后自然露出 -->
+        <div class="panel" id="mid_panel">
+            <div class="pixel-avatar" id="pixelAvatar" role="button" tabindex="0" aria-label="About">
+                <img src="assets/images/icons/logo.svg" alt="Gia Wang">
+            </div>
+
+            <div class="social-links">
+                <a class="social-link" id="emailLink" href="mailto:yajiawang@outlook.com" aria-label="Email">
+                    <span class="icon-content"><img class="social-icon" src="assets/images/icons/email.svg" alt="Email"></span>
+                    <span class="text-content">Email</span>
+                </a>
+                <a class="social-link" href="https://www.linkedin.com/in/yajia-wang-88b97326a" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
+                    <span class="icon-content"><img class="social-icon" src="assets/images/icons/LinkedIn.svg" alt="LinkedIn"></span>
+                    <span class="text-content">LinkedIn</span>
+                </a>
+                <a class="social-link" href="https://www.instagram.com/giaovis_/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+                    <span class="icon-content"><img class="social-icon" src="assets/images/icons/instagram.svg" alt="Instagram"></span>
+                    <span class="text-content">Instagram</span>
+                </a>
+                <a class="social-link" href="assets/images/icons/resume.pdf" target="_blank" rel="noopener noreferrer" aria-label="Resume">
+                    <span class="icon-content"><img class="social-icon" src="assets/images/icons/resume.svg" alt="Resume"></span>
+                    <span class="text-content">Resume</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="panel" id="right_panel">
+            <div class="project-frame fog-frame" data-fog="about">
+                <div class="fog-glass"><canvas class="fog-canvas"></canvas><canvas class="glow-canvas"></canvas></div>
+            </div>
+            <div class="project-frame fog-frame" data-fog="song">
+                <div class="fog-glass"><canvas class="fog-canvas"></canvas><canvas class="glow-canvas"></canvas></div>
+            </div>
+        </div>
+
+        <div class="side right"></div>
+
+    </div>
+
+    <!-- 77px 窗台 -->
+    <div class="sill"></div>
+
+    <!-- 覆盖层：盖在首页之上，只在展开态可见。收起 = 这一层自己缩窄、淡出、
+         隐藏，不是"变形成中栏"——中栏（mid_panel）本来就在下面，一直没动过 -->
+    <div class="intro-panel">
+        <div class="intro-body">
+            <p class="signature">Gia Wang</p>
+            <p class="opening-scene-text">
+                Product designer working on <span class="highlight">complex workflows</span><br>
+                and <span class="highlight">creative tools</span>, with experience in B2B SaaS<br>
+                and a long-term focus on music technology.
+            </p>
+        </div>
+
+        <!-- Enter the wall 按钮：之前挪到跟 .intro-panel 平级、相对 #stage
+             按 (743,721)/1672×941 反推的百分比定位，但实测那组坐标本身
+             就不是居中的（大概率是设计稿里手动摆放的近似值，不是精确居中
+             意图）。改回 .intro-panel 内部、相对这个白色面板自己水平居中：
+             left:50%+translateX(-50%)，垂直暂时保留原来的 76.62% 数值，
+             只是现在这个百分比是相对 .intro-panel 自己的高度算，不是
+             相对 #stage 了 -->
+        <button class="enter-wall-btn" type="button">Enter the wall</button>
+    </div>
+
+    <!-- 墙体投在下面的阴影：故意不放在 .intro-panel 里面——那个盒子自己
+         overflow:hidden，如果阴影是它的子元素、又要露在盒子底边以外，
+         会被直接裁掉看不见。跟 .intro-panel 平级、同样绝对定位，靠同一
+         组 --intro-* 变量对齐，宽度动画节奏也跟墙体一致 -->
+    <div class="wall-shadow"></div>
+
+    <!-- 头像单独浮着，跟 .intro-panel 是平级——3D 翻硬币效果，
+         正面 selfie / 背面像素头像，靠 backface-visibility 自动切换，
+         不是 opacity 交叉淡化。位置/尺寸两态不变，只转不移不缩。
+
+         三层结构，缺一层都会导致 backface-visibility 失效：
+           .avatar       只管定位/尺寸/透视，overflow 必须 visible
+           .avatar-flip  只管 3D 翻转（preserve-3d + rotateY），
+                         同样 overflow 必须 visible
+           .face         真正裁圆的地方（border-radius + overflow:hidden），
+                         裁剪被隔离在最内层，不会跟外层的 preserve-3d 打架 -->
+    <div class="avatar" role="button" tabindex="0" aria-label="Enter the wall">
+        <div class="avatar-flip">
+            <div class="face front">
+                <img src="assets/images/icons/selfie.png" alt="Gia Wang">
+            </div>
+            <div class="face back">
+                <img src="assets/images/icons/logo.svg" alt="">
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Work/Play/About 内容浮层：不离开 index.html、不跳转 content.html。
+     首页(#stage)留在背后不卸载，遮罩+面板浮在上面。面板内容是 overlay.js
+     用 fetch 从 content.html 里现取现塞的（同一份数据/排版两边共用，不用
+     各写一份）。逻辑见 overlay.js。
+     关闭入口：点遮罩、按 Esc、或者内容自带的 Home 按钮（目前只有 Work
+     banner 里有——Play/About 还是占位内容，没有自己的 banner/Home，
+     这两块暂时只能靠遮罩/Esc 关，等它们也做出 banner 就一并有了 HOME） -->
+<div class="content-overlay-scrim" id="overlayScrim"></div>
+<div class="content-overlay-panel" id="overlayPanel" role="dialog" aria-modal="true" aria-label="Section content">
+    <div class="overlay-body" id="overlayBody"></div>
+</div>
+
+<!-- <div id="hud"></div> -->
+<script src="script.js"></script>
+<script src="fog.js"></script>
+<!-- 擦玻璃效果的实时调参面板，纯开发用——按 D 键显示/隐藏，默认不可见。
+     完全独立于正式逻辑（读写 fog.js 暴露的 window.FOG_CONFIG /
+     window.__fogHardResetAll），删掉这一行不影响 fog.js 任何行为 -->
+<script src="debug-panel.js"></script>
+<script src="grid.js"></script>
+<!-- content.js 现在暴露 window.initContentScrollSpy，浮层内容注入后
+     overlay.js 要用它重新建立 banner crossfade 这套逻辑（克隆 DOM
+     不会带上脚本）。页面刚加载时 content.html 那套 banner 还不存在，
+     content.js 自己会判断出来、跳过自动初始化，不会有副作用 -->
+<script src="content.js"></script>
+<!-- about.js 同理暴露 window.initAboutScrollJack，浮层里 About 区块的
+     wheel 劫持/拖拽进度条都要在内容注入后手动重新初始化一次 -->
+<script src="about.js"></script>
+<script src="overlay.js"></script>
+<!-- <script src="filter-tuner.js"></script> -->
+
+</body>
+</html>

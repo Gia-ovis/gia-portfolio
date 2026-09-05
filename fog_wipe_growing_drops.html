@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>雾气擦字 · 真实生长水珠版</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Quicksand:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{ --ink:#7c8ba3; }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100vh; background:#dfe6ee;
+    font-family:'Quicksand','Trebuchet MS','Hiragino Sans GB',-apple-system,sans-serif;
+    color:var(--ink); display:flex; flex-direction:column; align-items:center;
+    padding:32px 20px 60px;
+  }
+  h1{font-size:18px;font-weight:600;margin:0 0 4px;color:#3c4a5e;}
+  p.sub{color:#6d7d94;font-size:13px;margin:0 0 10px;text-align:center;max-width:600px;line-height:1.7;}
+  p.credit{color:#a4b0c2;font-size:11.5px;margin:0 0 22px;text-align:center;}
+  p.credit a{color:#8ba3c2;}
+
+  .layout{ display:flex; gap:24px; align-items:flex-start; width:min(760px, 96vw); }
+
+  .pane-wrap{
+    position:relative; width: 420px; aspect-ratio: 3/4;
+    border: 3px solid #8ea3bd; border-radius:3px; overflow:hidden;
+    box-shadow:0 18px 40px rgba(30,45,70,0.2);
+  }
+  .shared-bg{
+    position:absolute; inset:0;
+    background:
+      radial-gradient(ellipse at 25% 12%, rgba(255,235,190,0.35), transparent 45%),
+      linear-gradient(180deg, #4f6f96 0%, #6f8fb8 38%, #9cb3cf 70%, #7d97b8 100%);
+  }
+  .shared-bg .mountains{
+    position:absolute; left:0; right:0; bottom:0; height:30%;
+    background:#2e4562; opacity:.6;
+    clip-path: polygon(0% 100%, 0% 55%, 10% 30%, 20% 50%, 32% 20%, 44% 48%, 56% 22%, 68% 50%, 80% 24%, 92% 48%, 100% 30%, 100% 100%);
+  }
+  .glow{
+    position:absolute; inset:0; pointer-events:none; z-index:1;
+    filter: blur(18px); opacity:.6;
+    background:
+      radial-gradient(circle at 50% 32%, rgba(255,205,150,0.4), transparent 55%),
+      radial-gradient(circle at 55% 62%, rgba(150,190,255,0.35), transparent 55%);
+  }
+  canvas{ position:absolute; inset:0; width:100%; height:100%; cursor:crosshair; touch-action:none; z-index:2; }
+
+  .panel{
+    flex: 0 0 260px; background:#fff; border:1px solid #dde3ec; border-radius:10px;
+    padding:16px 16px 18px; font-size:12.5px;
+  }
+  .panel h2{font-size:13px;margin:0 0 12px;color:#3c4a5e;font-weight:600;}
+  .ctrl{margin-bottom:14px;}
+  .ctrl label{display:flex;justify-content:space-between;margin-bottom:5px;color:#55647c;}
+  .ctrl label span.val{color:#3c4a5e;font-weight:600;}
+  .ctrl input[type=range]{width:100%;accent-color:#6d8cb8;}
+  .panel button{
+    width:100%; font-family:inherit; font-size:13px; padding:9px 0; margin-top:4px;
+    border-radius:8px; border:1px solid #c7d0dc; background:#f7f9fb; color:#3c4a5e; cursor:pointer;
+  }
+  .panel button:hover{background:#eef2f6;}
+  .hint{margin-top:14px;font-size:12px;color:#8b9bb2;text-align:center;}
+</style>
+</head>
+<body>
+
+<h1>雾气擦字 · 真实生长水珠版</h1>
+<p class="sub">水珠不再是一次性画完的静态渐变,而是像参考demo一样,每一滴都是独立的动画对象:接触点出现后,以各自随机的速度持续往下"生长",生长到各自随机的长度才停止。划一划玻璃,或者等一会儿看环境水珠自己冒出来。</p>
+<p class="credit">水珠生长逻辑参考自 <a href="https://github.com/sebnozzi/minimicro-foggywindow" target="_blank">sebnozzi/minimicro-foggywindow</a></p>
+
+<div class="layout">
+  <div class="pane-wrap">
+    <div class="shared-bg"><div class="mountains"></div></div>
+    <div class="glow"></div>
+    <canvas id="fog"></canvas>
+  </div>
+
+  <div class="panel">
+    <h2>参数面板</h2>
+    <div class="ctrl">
+      <label>擦开区域清晰度 <span class="val" id="v-holeAlpha">0.92</span></label>
+      <input type="range" id="holeAlpha" min="0.15" max="1" step="0.01" value="0.92">
+    </div>
+    <div class="ctrl">
+      <label>鼠标擦拭范围 <span class="val" id="v-wipeR">42</span>px</label>
+      <input type="range" id="wipeR" min="12" max="80" step="1" value="42">
+    </div>
+    <div class="ctrl">
+      <label>边缘模糊程度 <span class="val" id="v-edgeBlur">1</span>px</label>
+      <input type="range" id="edgeBlur" min="0" max="10" step="0.5" value="1">
+    </div>
+    <div class="ctrl">
+      <label>水珠生长速度 <span class="val" id="v-dropSpeed">1</span>x</label>
+      <input type="range" id="dropSpeed" min="0.2" max="3" step="0.1" value="1">
+    </div>
+    <div class="ctrl">
+      <label>环境水珠出现频率 <span class="val" id="v-ambientRate">1</span>x</label>
+      <input type="range" id="ambientRate" min="0" max="3" step="0.1" value="1">
+    </div>
+    <div class="ctrl">
+      <label>雾气回归速度 <span class="val" id="v-refogAlpha">0.010</span></label>
+      <input type="range" id="refogAlpha" min="0" max="0.05" step="0.001" value="0.010">
+    </div>
+    <button onclick="hardReset()">全部重新起雾</button>
+  </div>
+</div>
+
+<p class="hint">用鼠标在玻璃上划一划,或按住不动看水珠自己往下淌 👆</p>
+
+<script>
+const PARAMS = {
+  holeAlpha: 0.92,
+  wipeR: 42,
+  edgeBlur: 1,
+  dropSpeed: 1,
+  ambientRate: 1,
+  refogAlpha: 0.010,
+};
+['holeAlpha','wipeR','edgeBlur','dropSpeed','ambientRate','refogAlpha'].forEach(id => {
+  const el = document.getElementById(id);
+  const label = document.getElementById('v-' + id);
+  el.addEventListener('input', () => {
+    const v = parseFloat(el.value);
+    PARAMS[id] = v;
+    label.textContent = (id === 'refogAlpha') ? v.toFixed(3) : v;
+  });
+});
+
+const canvas = document.getElementById('fog');
+const wrap = canvas.parentElement;
+const ctx = canvas.getContext('2d');
+
+// ---- the growing-drop system, same idea as the reference demo ----
+// each drop knows only: where it starts, how wide, how long it will
+// eventually get, and how fast it grows. every frame we erase just the
+// NEW segment since last frame — cheap, and it reads as water actively
+// crawling down the glass rather than a pre-baked streak.
+let drops = [];
+
+function spawnDrop(x, y, opts = {}) {
+  drops.push({
+    x: x + (Math.random() - 0.5) * (opts.xJitter ?? 2),
+    y0: y,
+    width: opts.width ?? (1 + Math.random() * 2.2),
+    targetLen: opts.len ?? (24 + Math.random() * 90),
+    speed: (opts.speed ?? (14 + Math.random() * 55)) * PARAMS.dropSpeed, // px/sec
+    grown: 0,
+    strength: opts.strength ?? (0.35 + Math.random() * 0.35),
+    wobble: (Math.random() - 0.5) * 0.6,
+    done: false,
+  });
+}
+
+function spawnCluster(x, y, count, opts = {}) {
+  const n = count[0] + Math.floor(Math.random() * (count[1] - count[0] + 1));
+  for (let i = 0; i < n; i++) spawnDrop(x, y, opts);
+}
+
+let lastFrame = performance.now();
+function stepDrops(dt) {
+  ctx.globalCompositeOperation = 'destination-out';
+  ctx.filter = `blur(${PARAMS.edgeBlur * 0.4}px)`;
+  for (const d of drops) {
+    if (d.done) continue;
+    const before = d.grown;
+    d.grown = Math.min(d.targetLen, d.grown + d.speed * dt);
+    const segStart = d.y0 + before;
+    const segEnd = d.y0 + d.grown;
+    if (segEnd > segStart) {
+      const grad = ctx.createLinearGradient(d.x, d.y0, d.x, d.y0 + d.targetLen);
+      grad.addColorStop(0, `rgba(0,0,0,${d.strength})`);
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = grad;
+      const wob = d.x + Math.sin(d.grown * 0.05) * d.wobble * 3;
+      ctx.fillRect(wob, segStart, d.width, segEnd - segStart);
+    }
+    if (d.grown >= d.targetLen) {
+      d.done = true;
+      // tip bead — layered for a glassy, lit look: soft dark under-shadow
+      // first (depth), then a small bright specular dot offset toward
+      // the light (the shiny highlight seen in real water beads)
+      ctx.beginPath();
+      ctx.arc(d.x, d.y0 + d.targetLen, d.width * 1.15, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(0,0,0,${d.strength * 0.5})`;
+      ctx.fill();
+    }
+  }
+  ctx.filter = 'none';
+  ctx.globalCompositeOperation = 'source-over';
+  // specular highlights on freshly-finished drops — drawn with
+  // source-over so they sit as a bright glint on top of the now-clear
+  // glass, not as another erase
+  for (const d of drops) {
+    if (d.done && !d.beaded) {
+      d.beaded = true;
+      const bx = d.x - d.width * 0.3;
+      const by = d.y0 + d.targetLen - d.width * 0.6;
+      ctx.beginPath();
+      ctx.arc(bx, by, d.width * 0.45, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,255,255,0.75)';
+      ctx.fill();
+    }
+  }
+  drops = drops.filter(d => !d.done || Math.random() > 0.02); // let finished drops linger, occasionally cull
+}
+
+// ---- permanent hole: play triangle + caption, redrawn every refog tick ----
+function drawPermanentHoles(w, h) {
+  ctx.globalCompositeOperation = 'destination-out';
+  ctx.filter = `blur(${PARAMS.edgeBlur}px)`;
+  ctx.fillStyle = `rgba(0,0,0,${PARAMS.holeAlpha})`;
+
+  const cx = w / 2, cy = h * 0.32;
+  const size = Math.min(w, h) * 0.15;
+  ctx.beginPath();
+  ctx.moveTo(cx - size * 0.5, cy - size * 0.65);
+  ctx.lineTo(cx - size * 0.5, cy + size * 0.65);
+  ctx.lineTo(cx + size * 0.75, cy);
+  ctx.closePath();
+  ctx.fill();
+
+  const fontSize = Math.min(w, h) * 0.075;
+  ctx.font = `700 ${fontSize}px "Caveat", cursive`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const capY = h * 0.62;
+  const caption = 'I just released a song ;)';
+  ctx.fillText(caption, w / 2, capY);
+  ctx.filter = 'none';
+  ctx.globalCompositeOperation = 'source-over';
+
+  return { cx, cy, size, capY, capWidth: ctx.measureText(caption).width };
+}
+
+function drawFogBase(w, h) {
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.fillStyle = 'rgba(238,242,247,0.62)';
+  ctx.fillRect(0, 0, w, h);
+  for (let i = 0; i < 900; i++) {
+    const x = Math.random() * w, y = Math.random() * h;
+    const r = Math.random() * 1.4 + 0.3;
+    ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.10})`;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+  }
+}
+
+// small standalone shiny beads resting on the fog itself (not erasing
+// anything) — like the two solitary droplets floating in the reference
+// photo, plus little glints scattered right along the clear text so the
+// wiped strokes themselves catch light, the way an etched/wet line does
+function drawGlint(x, y, r) {
+  ctx.save();
+  // faint shadow/depth ring first
+  ctx.beginPath();
+  ctx.arc(x, y + r * 0.3, r * 1.3, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(20,30,48,0.10)';
+  ctx.fill();
+  // bright specular core
+  ctx.beginPath();
+  ctx.arc(x - r * 0.25, y - r * 0.25, r * 0.55, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.fill();
+  ctx.restore();
+}
+
+function scatterAmbientGlints(w, h, count) {
+  ctx.globalCompositeOperation = 'source-over';
+  for (let i = 0; i < count; i++) {
+    drawGlint(Math.random() * w, Math.random() * h * 0.55, 2 + Math.random() * 2.5);
+  }
+}
+
+function scatterShapeGlints(shapeInfo, w, h, count) {
+  if (!shapeInfo) return;
+  ctx.globalCompositeOperation = 'source-over';
+  const { cx, cy, size, capY, capWidth } = shapeInfo;
+  for (let i = 0; i < count; i++) {
+    // half along the play triangle edge, half along the caption baseline
+    if (Math.random() < 0.4) {
+      drawGlint(cx + (Math.random() - 0.3) * size * 0.8, cy + (Math.random() - 0.5) * size, 1.4 + Math.random() * 1.6);
+    } else {
+      drawGlint(w / 2 - capWidth / 2 + Math.random() * capWidth, capY + (Math.random() - 0.3) * 8, 1.2 + Math.random() * 1.4);
+    }
+  }
+}
+
+function hardReset() {
+  drops = [];
+  const w = canvas.width / devicePixelRatio;
+  const h = canvas.height / devicePixelRatio;
+  ctx.clearRect(0, 0, w, h);
+  drawFogBase(w, h);
+  shapeInfo = drawPermanentHoles(w, h);
+  // seed a first batch of drops off the shapes, like the reference demo
+  // sampling points along the hand outline
+  seedShapeDrops();
+  scatterShapeGlints(shapeInfo, w, h, 5);
+  scatterAmbientGlints(w, h, 3);
+}
+
+let shapeInfo = null;
+function seedShapeDrops() {
+  if (!shapeInfo) return;
+  const { cx, cy, size, capY, capWidth } = shapeInfo;
+  spawnCluster(cx, cy + size * 0.62, [2, 4], { xJitter: size * 0.9, len: 20 + Math.random() * 60 });
+  spawnCluster(canvas.width / devicePixelRatio / 2, capY + 6, [4, 8], { xJitter: capWidth * 0.9, len: 14 + Math.random() * 40, speed: 10 + Math.random() * 30 });
+}
+
+function resize() {
+  const rect = wrap.getBoundingClientRect();
+  canvas.width = rect.width * devicePixelRatio;
+  canvas.height = rect.height * devicePixelRatio;
+  canvas.style.width = rect.width + 'px';
+  canvas.style.height = rect.height + 'px';
+  ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+  hardReset();
+}
+
+function wipeAt(x, y) {
+  ctx.globalCompositeOperation = 'destination-out';
+  ctx.filter = `blur(${PARAMS.edgeBlur}px)`;
+  const R = PARAMS.wipeR;
+  const grad = ctx.createRadialGradient(x, y, 0, x, y, R);
+  grad.addColorStop(0, `rgba(0,0,0,${PARAMS.holeAlpha})`);
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = grad;
+  ctx.beginPath(); ctx.arc(x, y, R, 0, Math.PI * 2); ctx.fill();
+  ctx.filter = 'none';
+  ctx.globalCompositeOperation = 'source-over';
+  // like the reference: wiping spawns a few drops right where you touched
+  if (Math.random() < 0.35) spawnCluster(x, y, [1, 2], { xJitter: 14 });
+}
+
+function pos(e) {
+  const rect = canvas.getBoundingClientRect();
+  const cx = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+  const cy = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+  return [cx, cy];
+}
+canvas.addEventListener('pointerdown', e => { const [x, y] = pos(e); wipeAt(x, y); });
+canvas.addEventListener('pointermove', e => { const [x, y] = pos(e); wipeAt(x, y); });
+
+window.addEventListener('resize', resize);
+
+// ---- main animation loop: grows active drops + occasionally spawns
+// ambient ones anywhere on the glass, so it feels alive even with no
+// mouse interaction ----
+function loop(now) {
+  const dt = Math.min(0.05, (now - lastFrame) / 1000);
+  lastFrame = now;
+  const w = canvas.width / devicePixelRatio;
+  const h = canvas.height / devicePixelRatio;
+
+  if (Math.random() < 0.02 * PARAMS.ambientRate) {
+    spawnDrop(Math.random() * w, Math.random() * h * 0.7, {
+      strength: 0.12 + Math.random() * 0.12,
+      len: 16 + Math.random() * (h * 0.25),
+    });
+  }
+  if (Math.random() < 0.01 * PARAMS.ambientRate) {
+    scatterAmbientGlints(w, h, 1);
+  }
+
+  stepDrops(dt);
+  requestAnimationFrame(loop);
+}
+
+// re-fog ticks — separate from the animation loop, coarser interval
+setInterval(() => {
+  const w = canvas.width / devicePixelRatio;
+  const h = canvas.height / devicePixelRatio;
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.fillStyle = `rgba(236,240,246,${PARAMS.refogAlpha})`;
+  ctx.fillRect(0, 0, w, h);
+  shapeInfo = drawPermanentHoles(w, h);
+  if (Math.random() < 0.15) scatterShapeGlints(shapeInfo, w, h, 1);
+}, 90);
+
+function start() {
+  resize();
+  requestAnimationFrame(loop);
+}
+
+if (document.fonts && document.fonts.ready) {
+  Promise.all([document.fonts.load('700 100px "Caveat"'), document.fonts.ready]).then(start).catch(start);
+} else {
+  start();
+}
+</script>
+
+</body>
+</html>

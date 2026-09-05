@@ -1,0 +1,1956 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ============================================================
+   设计规格 token：Selected Work 页面的色板/字体，来自 Figma 标注。
+   Avenir 不在 Google Fonts 上（是系统自带的商业字体，Mac/iOS 有），
+   所以走系统字体栈兜底；没有 Avenir 的平台会退到 Helvetica Neue，
+   视觉上八九不离十，不是照抄不到就摆烂的意思。
+   ============================================================ */
+:root {
+    --brand:          #0072CB;
+    --stroke:         #9EA5AC;
+    --text-primary:   #273138;
+    --text-secondary: #697784;
+    --text-warning:   #E2644D;
+    --bg-white:       #FBFCFD;
+    --bg-blue:        #DEEDF9;
+    --bg-reading:     #FFFFF6;
+    --bg-grey:        #EBECED;
+    --tag-green:      #D8FBFD;
+    --tag-yellow:     #FDFDD8;
+
+    --font-avenir: "Avenir", "Avenir Next", -apple-system, "Helvetica Neue", Arial, sans-serif;
+    --font-display: "Montserrat", "Avenir Next", sans-serif;
+}
+
+body {
+    font-family: "Hiragino Sans GB", "Hiragino Sans GB W3", "PingFang SC", "Helvetica Neue", sans-serif;
+    font-weight: 300;
+    color: #3f4d5a;
+    background: #FFFFFF;
+}
+
+/* ============================================================
+   区块 + 占位卡片
+   ============================================================ */
+main { padding: 0 24px; }
+
+.content-section {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 160px 0 120px;
+    min-height: 60vh;
+    scroll-margin-top: 90px;   /* sticky banner 挡在顶部，带 hash 进来别被它遮住标题 */
+}
+.content-section:first-of-type { padding-top: 220px; }
+
+/* Work 区块自己的蓝色 banner 要紧贴容器顶端，中间不能有空隙——上面
+   ".content-section:first-of-type" 那条规则是 类+伪类 选择器，
+   优先级 (0,2,0) 比这里单独一个 class 的 (0,1,0) 高，之前只写
+   ".content-section--work{padding-top:40px}" 根本压不过它，#work
+   刚好又是文档里第一个 .content-section，实际生效的是 220px，
+   这就是 banner 前面那段空白的真正来源。这里用两个 class 叠在一起
+   把优先级顶到跟 :first-of-type 一样 (0,2,0)，再靠源码顺序（写在
+   后面）赢下去，才能真正盖掉 220px。
+   设计稿的画布基准是 1440px，比其余区块目前用的 960px 更宽 */
+/* padding-top/bottom 都清零：Work→Sandbox 之间的间距现在完全交给
+   .project-divider 自己的 margin-top/bottom:200px 控制，#work 如果自己
+   还留着 padding-bottom（默认继承 .content-section 的 120px），会跟
+   divider 的 margin-top 叠加，变成"两段间距各自算数"，实测量出来是
+   416px 而不是预期的 200px（诊断过程见旁注，这里直接改） */
+.content-section.content-section--work {
+    max-width: 1440px;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+/* Sandbox 的 Beyond Fingers 项目用了跟 #work 一样的 1440px 画布
+   （.project-row 里 232px 间距 + 600px 框 + 文字列，960px 默认画布
+   装不下），区块本身也要跟着放宽，不然 .project-row 的 max-width:1440px
+   会被这里的 960px 限制截断。
+   padding-top 清零：跟 #work 同样的道理——.content-section 默认的
+   160px padding-top 会跟前面 divider 的 margin-bottom:200px 叠加，
+   #work 当初做了这个处理但 #sandbox 被拼进长页面流程时漏掉了，这次
+   补上 */
+/* padding-bottom 清零：Sandbox→About 之间现在也加了分隔格子（跟
+   Work→Sandbox 同一套 .project-divider，margin-top/bottom:200px），
+   #sandbox 自己如果还留着默认继承来的 120px padding-bottom，会跟
+   分隔格子的 margin-top 叠加，重蹈 Work→Sandbox 那次的覆辙 */
+.content-section.content-section--sandbox {
+    max-width: 1440px;
+    padding-top: 0;
+    padding-bottom: 0;
+    /* 建立 inline-size 容器，给下面 .project-info 的 margin-left 用
+       cqw 而不是 vw——overlay 面板（#overlayBody）左右各挖掉 40px，
+       同一个视口宽度下面板实际可用宽度比 vw 小 80px，vw 算出来的收缩
+       量在面板里就会少收 80px，照样溢出。cqw 跟的是这个容器自己的
+       实际渲染宽度，不管是在独立页面里还是被 overlay.js clone 进面板，
+       数值都对得上 */
+    container-type: inline-size;
+}
+
+/* About 的进度条是精确 1440px 定宽（见 .progress-bar-track），跟
+   #work/#sandbox 同样的道理，区块本身也要放宽到 1440px 画布，不然
+   .about-sticky 的 overflow:hidden 会把进度条按可用空间（960px）
+   压扁——它是 .about-progress-bar 的 flex 子项，默认 flex-shrink:1，
+   容器不够宽就会被压缩，实测量出来只有 960px 宽，不是设计要的 1440px。
+   padding-top 现在也清零——Sandbox→About 之间加了分隔格子之后，
+   跟 #work/#sandbox 同样的道理，#about 自己继承来的 160px padding-top
+   会跟分隔格子的 margin-bottom 叠加。
+   padding-bottom 也清零——#about 是 <main> 里最后一个区块，继承自
+   .content-section 的默认 120px padding-bottom 直接就是文档末尾的
+   纯留白（后面什么都没有了，不像 #work/#sandbox 那样有 divider 会
+   跟着叠加，这里是实打实白白多出来的 120px），横向画廊结束后应该
+   立刻到底，不该再留这段 */
+.content-section.content-section--about {
+    max-width: 1440px;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+/* ============================================================
+   Work banner：色块本身要 full-bleed——撑满 <main> 实际所在的那个盒子，
+   不受 <main> 自己 padding:0 24px 的影响；内部内容（这里只有标题）还是要
+   收在 1440px 画布内、居中，不能跟着色块一起无限撑宽。所以拆两层：
+   .work-banner 负责撑满，.work-banner-inner 负责把内容收回 1440px 画布内。
+
+   原来是经典 calc(50% - 50vw) 写法，直接撑到"浏览器视口"——这在
+   content.html 独立访问时是对的（<main> 的外框就是视口宽度），但
+   overlay.js 是把整个 <main> clone 进 #overlayBody（左右各 40px 内缩的
+   浮层面板）里再显示的，这时候 <main> 的外框是面板宽度，不是视口宽度，
+   50vw 撑出来的还是按裸视口算的，会比面板宽 80px，色块被面板的
+   overflow:hidden 裁掉是没露出来，但 .work-banner-inner 的 1440 画布
+   仍然是按这个多出来的 50vw 撑的量居中算的，HOME 按钮和标题的位置
+   会跟着算错，露到面板外面被裁一部分（HOME 左边一截、标题右边一截）。
+
+   改成只逃逸 <main> 自己的 padding（唯一的宽度约束，<main> 没有
+   max-width，也没有 margin:auto 居中），用普通 % 而不是 vw——
+   width:100% 是 <main> 内容框的宽度，加回两侧 24px padding 就是
+   <main> 的外框宽度；margin 直接用 <main> padding 的负值抵消。
+   这样不管 <main> 自己外框实际是视口宽度（独立页面）还是面板宽度
+   （overlay clone 进去之后），色块和 .work-banner-inner 的 1440 画布
+   都会跟着 <main> 真实的外框走，不用管是在哪个场景下渲染的，也不需要
+   引入 container query——offset 是 <main> 自己已知的固定 padding 值，
+   不是要按视口/容器比例换算的量 */
+.work-banner {
+    position: sticky;
+    top: 0;
+    z-index: 10;   /* 盖在下面滚过来的项目卡片之上 */
+
+    width: calc(100% + 48px);
+    margin-left: -24px;
+    margin-right: -24px;
+    height: 68px;
+
+    background: var(--brand);
+    /* 左下/右下不要圆角（0），左上/右上贴合白色背景（overlay 面板
+       .content-overlay-panel）自己的圆角，都是 16px——这样 banner 在
+       overlay 里跟面板的圆角是同一条线延续下去，不是各自转各自的弧度 */
+    border-radius: 16px 16px 0 0;
+    overflow: hidden;
+
+    /* banner 底部到 001 卡片之间那块留白（DevTools 里显示成橙色的
+       margin 高亮区）：原来写死 130px，改成跟浏览器窗口高度联动——
+       ≤720px 高收到 35px，≥987px 高保持原始 130px 不变，中间线性
+       过渡。是视口高度（100vh），不是宽度（100vw）——767px 高的窗口
+       跟 1920px 高的窗口比，这块留白不协调的是纵向比例，跟横向宽度
+       无关 */
+    margin-bottom: clamp(35px, calc(35px + (130 - 35) * (100vh - 720px) / (987 - 720)), 130px);
+}
+
+.work-banner-inner {
+    max-width: 1440px;
+    height: 100%;
+    margin: 0 auto;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;   /* Home 贴左边缘，标题贴右边缘，一次到位 */
+}
+
+.banner-home {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    padding: 8px 18px 8px 12px;
+    border: 1.5px solid #fff;
+    border-radius: 24px;
+
+    color: #fff;
+    text-decoration: none;
+    font-family: var(--font-avenir);
+    font-weight: 500;
+    font-size: 15px;
+    letter-spacing: 0.04em;
+
+    transition: background 0.2s ease;
+}
+.banner-home:hover { background: rgba(255, 255, 255, 0.15); }
+.banner-home svg { width: 18px; height: 18px; }
+
+.section-title {
+    margin: 0;   /* h1 默认有 margin，flex 居中前先清零，不然把 margin box 撑高、居中计算就歪了 */
+
+    flex: 1 1 auto;
+    min-width: 0;   /* 允许在 flex 容器里缩小，不被内容自身宽度撑爆 */
+    height: 100%;   /* 用 flex 居中而不是单靠 line-height——大字号下不同字体的
+                       ascent/descent 比例不一样，line-height 百分比算出来的
+                       居中经常跟实际墨迹对不上，flex 居中是按盒子本身来的，
+                       比较稳 */
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: clamp(40px, 6vw, 96px);
+    line-height: 1;
+    letter-spacing: 0;
+
+    background: linear-gradient(90deg, #FFFFFF 0%, #EFF8FF 49%, #DDF0FF 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: clip;
+    pointer-events: none;
+}
+
+/* <1600px：原来是 1439px 断点，现在统一扩大到 1599px（跟下面
+   .project-card/.project-row 的 40px 边距用同一个分界，两者是同一套
+   "视口 <1600px 时统一留 40px" 需求）。.work-banner-inner 的
+   max-width:1440px 不够宽时，margin:0 auto 就没有多余空间可分配，
+   .banner-home/.section-title 会自动贴到 .work-banner 的左右边缘——
+   右侧本来就该贴边（.section-title 已经是 margin:0 + justify-content:
+   flex-end，这里显式写一遍 margin-right:0 只是把这个意图定下来，不依赖
+   "正好没有margin"这种巧合），左侧的 HOME 按钮贴到最边上太挤，需要显式留
+   40px。<1200px 再收到 20px，断点分界不变，还是 1199 */
+@media (max-width: 1599px) {
+    /* .work-banner-inner 自己也有 max-width:1440px + margin:0 auto，
+       跟下面 .project-row/.content-section 是同一个问题——如果不取消，
+       它自己的居中挤压会在 .banner-home 的 40px margin 之外再叠一层
+       可变偏移（实测视口 1599px 时 HOME 会落在 119.5px 而不是 40px，
+       多出来的 79.5px 正是 .work-banner-inner 自己居中出来的量），
+       必须一起取消掉 */
+    .work-banner-inner {
+        max-width: none;
+    }
+    .banner-home {
+        margin-left: 40px;
+    }
+    .section-title {
+        margin-right: 0;
+    }
+}
+@media (max-width: 1199px) {
+    .banner-home {
+        margin-left: 20px;
+    }
+}
+
+/* ============================================================
+   项目1/项目2 分隔格子：正方形网格，竖排固定 4 行（72÷4=18px 一格），
+   横排数量跟着容器宽度自适应——full-bleed，撑到视口边缘，不锁在
+   1440 画布内。
+
+   之前先后试过 CSS repeating-linear-gradient（叠两层时第二层不渲染、
+   0.5px 亚像素在标准屏幕上糊掉）和 border 兜底（跟渐变线叠在一起
+   导致顶部/底部变粗），都是 CSS 渐变这条路子本身取整不稳定。现在
+   改成 grid.js 用原生 SVG <line> 现算现画——坐标精度由 SVG 自己保证，
+   不存在渐变重复图案的边界取整问题，页面加载和 resize 时会重新按
+   容器实际宽度生成，这里只负责占位尺寸（JS 生成的 <svg> 会填满这个
+   容器），具体线条逻辑见 grid.js。
+   ============================================================ */
+.project-divider {
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+    height: 72px;
+    /* 基准值改回字面数字 200px→100px（不是排查出来的实际值 220px）。
+       区间从 1024-1672px 改成 1200-1672px，1200px 以下固定 100px
+       不再继续变化，1672px 以上保持 200px 不再变化（clamp 上下限
+       自然封顶） */
+    margin-top: clamp(100px, calc(100px + (200 - 100) * (100vw - 1200px) / (1672 - 1200)), 200px);
+    margin-bottom: clamp(100px, calc(100px + (200 - 100) * (100vw - 1200px) / (1672 - 1200)), 200px);
+    box-sizing: border-box;
+}
+.divider--sandbox-to-about {
+    /* 同样区间改成 1200-1672px，1200px 以下固定最小值，跟上面
+       .project-divider 基础值不一样，各自单独一条 clamp */
+    margin-top: clamp(60px, calc(60px + (120 - 60) * (100vw - 1200px) / (1672 - 1200)), 120px);      /* 只改这一条分隔条的顶部间距，其他分隔条维持 .project-divider 那条 */
+    margin-bottom: clamp(40px, calc(40px + (80 - 40) * (100vw - 1200px) / (1672 - 1200)), 80px);   /* 只改这一条分隔条的底部间距，其他分隔条维持 .project-divider 那条 */
+}
+.project-divider svg {
+    display: block;
+}
+
+/* ============================================================
+   项目卡片：编号+状态标签+连接线 一列，缩略图+标题+标签+按钮 一列。
+   .project-card--mirror 是奇偶项目镜像用的——编号列换到右边（grid 列
+   顺序对调），列内文字改右对齐，这样"002"、状态标签的右边缘才能跟
+   "About" 这类右对齐元素一样贴齐画布边缘，而不是顶着 128px 那个窄列
+   宽度被自己的大字硬生生撑到画布外面去。
+   ============================================================ */
+.project-card {
+    display: grid;
+    grid-template-columns: 128px 1fr;
+    /* 排查过：这条 gap 之前完全没有响应式处理（不存在"先收gap再缩图"的
+       既有机制，是这次新增的）。<1600px 时 .project-card 自己的左右
+       margin 固定 40px（16+<main>的24px，不随视口变），所以视口每收窄
+       1px，可用宽度也正好收窄 1px——只要让 gap 跟着按 1:1 速率收缩，
+       .project-body 这一列的渲染宽度就能保持不变，图片完全不用跟着缩，
+       "gap 优先"就是这样自动实现的，不用额外分两个断点。
+       下限 = 218÷3 = 72.6667px（当前值的 1/3），公式：
+       218 - (1440-100vw) = 100vw-1222，clamp 上限 218（≥1440px 时不变）、
+       下限 72.6667（在 100vw-1222=72.6667 即 vw≈1294.67px 时触到，此后
+       gap 不再收缩，多出来的收窄量才开始真正压缩 .project-body/图片，
+       这个交接点是算出来的，不是随便定的断点） */
+    column-gap: clamp(72.6667px, calc(100vw - 1222px), 218px);
+    /* 项目之间的间距——之前是靠分隔格子撑开视觉停顿，格子去掉之后改成
+       卡片自己的 margin 直接留白。原来是 1200-1672px 区间线性收缩 15%
+       （270px→229.5px），这次触发点从 1200px 挪到 1350px（下面新增
+       ≤1350px 那层固定 172.1px 之后，1200px 这个旧下限不再需要，
+       229.5px 现在改成"过渡带的下端"，不是"到底了保持不变"的下限），
+       1672px 以上保持 270px 不变 */
+    margin-bottom: clamp(229.5px, calc(229.5px + (270 - 229.5) * (100vw - 1350px) / (1672 - 1350)), 270px);
+}
+/* 新增更窄的一层：≤1350px 硬切换固定 172.1px（229.5×0.75，在原下限
+   229.5px 基础上再缩短 25%），不做渐变。跟上面那条 clamp 的过渡带
+   在 1350px 这一点交接——clamp 那条在 vw=1350 时刚好精确算出 229.5px，
+   这条 media query 从 1350px（含）往下直接接管，改成 172.1px，
+   两条规则的分界完全对齐，不会有断层之外的重叠区间 */
+@media (max-width: 1350px) {
+    .project-card {
+        margin-bottom: 172.1px;
+    }
+}
+/* #work 里排在最后、紧邻 Work→Sandbox 分隔格子的那张卡片（003 SmartDevil）
+   自己的 96px margin-bottom 要清零——板块级的间距现在完全交给分隔格子的
+   margin-top:200px 控制，这张卡片如果还保留自己的 margin，会跟分隔格子的
+   间距叠加。只对 #work 里的 :last-child 清零，001→002、002→003 之间
+   卡片自身的呼吸感（96px）不受影响 */
+#work .project-card:last-child {
+    margin-bottom: 0;
+}
+
+/* <1600px：001/002 项目卡片、Sandbox 的 Beyond Fingers 行(.project-row)
+   统一留 40px 左右边距，跟上面 .banner-home 的 40px 是同一套需求、
+   同一个 1599px 分界。
+
+   排查过程：.content-section--work/--sandbox 本身没有左右 padding，
+   边距完全来自 max-width:1440px + margin:0 auto 的居中挤压，加上
+   <main> 自己全局的 padding:0 24px。这两层叠加的结果不是一个固定值——
+   实测视口 ≤1488px 时是 24px 不变（<main> 的 padding，区块自己不再需要
+   居中让出空间），1488-1600px 之间从 24px 一路涨到 80px（区块仍卡在
+   1440 上限，多出来的可用宽度全去centering了）。既不是稳定的"贴边0"，
+   也不是稳定跟 40px 相关的值，所以不能简单在卡片自己身上再加一段固定
+   margin 了事（会跟这段本来就不均匀的底数叠加，凑不出统一的 40）。
+
+   改法：先把区块自己的 1440 上限在这个区间取消掉（max-width:none），
+   这样区块不再居中挤压，直接贴满 <main> 的内容框——<main> 的 24px
+   padding 是唯一剩下的、稳定不变的偏移。再让卡片自己补 16px
+   （24+16=40，凑成目标的 flat 40px），不用管区块本身涨缩到多宽。
+   .content-section--sandbox 这么改之后会比 1440 更宽，里面的
+   .sandbox-grid-wrapper 原来靠"父容器同样卡在 1440"顺带居中、自己没有
+   margin:auto，这次顺手给它补了 margin:0 auto（见上面那条规则），
+   不然会在这个区间跟着贴左边缘，不再居中 */
+@media (max-width: 1599px) {
+    /* 基础规则是 .content-section.content-section--work（双类叠加，
+       specificity (0,2,0)，见上面 220 行左右那条关于 :first-of-type
+       优先级的注释——这里必须叠同样两个类，不然单类选择器 specificity
+       (0,1,0) 更低，即使写在后面也压不过 max-width:1440px 那条规则 */
+    .content-section.content-section--work,
+    .content-section.content-section--sandbox,
+    .content-section.content-section--about {
+        max-width: none;
+    }
+    /* .project-row 自己的 16px margin 和 max-width:none 挪到下面
+       .project-row 基础规则后面单独写了（同样是源码顺序问题——基础
+       规则里的 margin:0 auto 在文件更后面，会盖掉写在这里的值），这里
+       只放 .project-card，它的基础规则本来就在这条前面，不受影响 */
+    .project-card {
+        margin-left: 16px;
+        margin-right: 16px;
+    }
+}
+.project-card--mirror {
+    grid-template-columns: 1fr 128px;
+}
+/* 撤销：上一次"紫色 gap 优先收缩、下限 1/3"那条 clamp() 是写在
+   .project-card 基础规则上的，002 用的也是 .project-card（叠加
+   --mirror），跟着一起被改了，但那条规则本来就只该用在 001。这里用
+   002 专属的 --mirror 选择器盖回原始的 218px 固定值——002 现在没有
+   另一套"默认响应式"可以退回（排查过，这条 gap 在这次任务之前压根没
+   被处理过，"默认响应式"这个说法不准确，真正的原状就是不随视口变化的
+   218px），撤销就是恢复这个原状，不是切换到某个既有的备用机制 */
+.project-card--mirror {
+    column-gap: 218px;
+}
+/* 镜像布局：编号+状态标签靠右对齐。原来想用 text-align:right 偷懒，
+   但 .status-tag 是 inline-flex，实测 text-align 并不会把它推到右边
+   （只有 .display-number 里溢出的文字会被文字级别的 text-align 带偏，
+   标签这种整个盒子的定位不归 text-align 管）——改成让 .project-meta
+   自己是一个纵向 flex 容器，用 align-items:flex-end 统一处理，不管
+   子元素是 block 还是 inline-flex 都能精确贴右边缘。
+   .project-meta 现在只有一个子元素 .meta-row（箭头+文字横排的容器），
+   align-items:flex-end 让 .meta-row 整体贴 128px 这一列的右边缘——
+   箭头会让 .meta-row 的实际宽度远超 128px，超出的部分自然往左溢出，
+   不影响右边缘对齐。 */
+.project-card--mirror .project-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+/* 箭头 + "002/标签" 横排，顶部对齐（不是箭头堆在标签下面那种做法了）：
+   arrow-wrap 的顶部要跟 002 数字的顶部对齐，而 meta-text 里 002 数字
+   正好是第一个子元素，所以 align-items:flex-start 天然就对上了 */
+.meta-row {
+    display: flex;
+    align-items: flex-start;
+}
+/* 重做：上一版整段 1024-1672px 都用 clamp() 联动缩放，问题是 ≥1600px
+   也被缩了，跟设计稿"宽屏保持原尺寸，只在 1024-1600 这一段收缩"的
+   实际需求对不上。这次改成明确的两段：
+     ≥1600px：固定 228×394 原尺寸，不联动任何东西
+     1024-1600px：线性插值缩到 150×259
+   228/394≈0.5787、150/259≈0.5792，两个比例基本一致，说明是纯等比例
+   缩小，所以只对 .arrow-wrap 这个外层 div 的 width 用 clamp() 插值，
+   height 交给 aspect-ratio:228/394 锁定自动跟随，不用宽高分开算两条
+   插值公式（少一个出错的地方）。
+   .arrow-wrap 自己原来没有尺寸，渲染尺寸完全来自内部 <svg width="228"
+   height="388"> 的 HTML 属性（"394"是算上内联 svg 默认基线留白的
+   div 渲染高度，跟 svg 自己 388 的原生高度差 6px）——这次直接把尺寸
+   定在 .arrow-wrap 这个 div 层，svg 改成 width/height:100% 完全跟随
+   父容器，不再依赖它自己的 HTML 属性/内联留白这些细节。
+   clamp() 里的线性插值：斜率 (228-150)/(1600-1024)=78/576=13.5417vw，
+   截距 150-13.5417%×1024=11.3333px，即
+   width=13.5417vw+11.3333px，在 1600px 精确算出 228、1024px 精确算出
+   150，clamp 的上下限（150/228）保证边界两侧不会再继续跟着 vw 变化，
+   ≥1600px 稳定卡在 228 不会有任何缩放痕迹 */
+.arrow-wrap {
+    margin-right: 5px;
+    width: clamp(150px, calc(13.5417vw + 11.3333px), 228px);
+    aspect-ratio: 228 / 394;
+}
+/* ≤1440px 硬切换成固定值，不再跟着上面那条连续 clamp 曲线走：
+   宽度最初是 1440px 时曲线原值 206.333px × 0.9 = 185.7px，这次在此
+   基础上再缩小 10%：185.7 × 0.9 = 167.13px（按 167.1px 写）。
+   距离(margin-right) 改成 -20px（负值，箭头跟"002+标签"重叠一部分）。
+   两个值往下一路固定到底，不会在更窄的宽度再继续收缩 */
+@media (max-width: 1440px) {
+    .arrow-wrap {
+        width: 167.1px;
+        margin-right: -20px;
+    }
+}
+.arrow-wrap svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+.meta-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+.project-card--mirror .project-body {
+    margin-left: 0;   /* 镜像布局里图片+文字本来就在左列，不用再往右推 */
+    margin-right: auto;
+    margin-top: -20px;   /* 整个图片+文字+按钮这块往上移 20px，不动 .project-body 自己的 padding-top（那是跟"002"数字对齐用的） */
+}
+
+.project-meta {
+    position: relative;
+}
+
+.display-number {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 128px;
+    line-height: 0.8;
+    color: var(--brand);
+}
+/* 排查过：原来是写死 128px，没有任何响应式处理。1024-1440px 区间
+   固定改成 96px（不是渐变过渡），1440px 以上恢复原来的 128px。
+   排查过内容里现有的窄屏断点（1199px 的 .banner-home、1023px 那个
+   .work-banner/.project-card/.connector-line 等布局断点）都没有碰
+   .display-number 的 font-size，不存在冲突——这条新断点是这个属性
+   目前唯一的一条规则，1024px 以下没有另外的规则接管，96px 会一路
+   保持到最窄，符合任务描述"1024-1440px区间"给出的字面意思（没有要求
+   1024px 以下要变回别的值） */
+@media (max-width: 1440px) {
+    .display-number {
+        font-size: 96px;
+    }
+}
+
+.status-tag {
+    display: inline-flex;   /* inline 而不是 flex——镜像卡片靠 .project-meta 的
+                                text-align:right 把它推到右边，inline-flex 才会
+                                听父级 text-align，block/flex 不会 */
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    margin-top: 10px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: var(--font-avenir);
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 16px;
+    color: var(--text-primary);
+}
+/* 尺寸按规格表锁死（65×24 / 79×24 / 83×32），不让文字自然宽度决定——
+   连接线的起点是照这个尺寸算出来的坐标，标签尺寸一变线就对不上了。
+   但规格表是给"Shipped"/"Delivered"这种单词量的，遇到像
+   "DELIVERED FOR DEVELOPMENT"这种长句子状态文案，硬塞进 79px 会被
+   挤变形——这种情况用 .status-tag--auto 覆盖掉固定宽度，改成
+   hug content，宽度多少交给文字自己撑 */
+.status-tag--green  { width: 65px; height: 24px; background: var(--tag-green); }
+.status-tag--yellow { width: 79px; height: 24px; background: var(--tag-yellow); }
+.status-tag--outline {
+    width: 83px;
+    height: 32px;
+    padding: 8px 10px;
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--stroke);
+}
+.status-tag--auto {
+    width: fit-content;
+    padding: 4px 10px;
+    white-space: nowrap;
+}
+
+/* 连接线：不再靠估的角度/长度硬凑，是照标签的实际坐标算出来的——
+     线的起点（旋转后的锚点，rotate(-45deg) + transform-origin:bottom left
+     意味着锚点就是线的下端）水平方向在"标签右边缘 + 51px"；
+     线的垂直中心对齐在"标签下边缘"这条高度线上，倒推出锚点的 y。
+   标签右边缘 x = 65px（.status-tag--green 的宽度，标签从 left:0 起画）
+   标签下边缘 y = 128px×0.8（display-number 行高） + 10px（标签 margin-top）
+                + 24px（标签高度） = 136.4px
+   线长 213px、45°，垂直投影 = 213×sin(45°) ≈ 150.61px，半投影 ≈ 75.31px
+   锚点 x = 65 + 51 = 116px
+   锚点 y = 136.4 + 75.31 = 211.71px（锚点在"线的下端”，比垂直中心低半个投影） */
+/* 间距再加宽 6px（这是第二次加宽，在上一次已经加过 6px 的基础上再加
+   6px，不是从原始值 211.71/116 重新算）：同样沿 45° 轴线方向平移
+   Δleft=Δtop=6/√2≈4.2426px：
+   215.9526+4.2426=220.1952, 120.2426+4.2426=124.4852 */
+.connector-line {
+    position: absolute;
+    top: 220.1952px;
+    left: 124.4852px;
+    width: 213px;
+    height: 0;
+    border-top: 1px solid var(--stroke);
+    transform: rotate(-45deg);
+    transform-origin: bottom left;
+}
+/* 排查结论：这条规则之前用的是 clamp() 线性插值（1024-1440px 渐变），
+   不是被别的规则覆盖冲突——是这条规则本身从最初实现开始就一直没有
+   跟着后来 Sandbox 001/002 那批"硬切换"改法一起迁移过，单纯是漏改，
+   现在补上，改成断点内外两个固定值，中间没有过渡：
+   宽度缩小到 80%：213→170.4px。
+   "距离 display-number 缩短 30%"：把锚点 (left,top) 看成从 001 数字
+   左上角 (0,0)（.project-meta 的原点）出发的向量，缩到 70%：
+   left: 116×0.7=81.2px, top: 211.71×0.7=148.197px
+   （角度 rotate(-45deg) 和 transform-origin 不变，只挪动锚点+改长度） */
+@media (max-width: 1440px) {
+    .connector-line {
+        width: 170.4px;
+        /* 第二次再加宽 6px：152.4396+4.2426=156.6822, 85.4426+4.2426=89.6852 */
+        top: 156.6822px;
+        left: 89.6852px;
+    }
+}
+/* 项目3 这条线重新定位过：
+   - 线本身是靠 transform-origin:bottom left 旋转的 0 高度元素，锚点
+     (left,top) 就是线的下端；旋转 -45deg 后，线的上端（视觉上的顶部）
+     落在 (left + 213×cos45°, top − 213×sin45°) ≈ (left+150.61, top−150.61)
+   - 顶部对齐"003"顶部的基准值是 top:150.61px / left:176px，
+     再在这个基础上整体下移 20px、右移 30px：
+     top  150.61 + 20 = 170.61px
+     left 176 + 30 = 206px */
+.connector-line--003 {
+    top: 170.61px;
+    left: 206px;
+}
+/* left 这一层覆盖也要跟着响应式收缩——003/beyond-fingers 共用这条 left
+   override，同样按"锚点相对 003 数字原点缩到 70%"算：206×0.7=144.2px。
+   003 本身还藏在注释里（见 content.html），这条规则暂时只在 beyond-fingers
+   身上生效，003 恢复展示时如果要接上这套响应式，需要另外确认它自己的
+   top override（.number-003 之类）是否也在原点 (0,0)，这里不替它假设 */
+@media (max-width: 1440px) {
+    .connector-line--003 {
+        left: clamp(144.2px, calc(144.2px + 61.8px * ((100vw - 1024px) / 416px)), 206px);
+    }
+}
+
+.project-body {
+    margin-left: auto;      /* 图片+标题+标签+按钮整体靠右贴齐画布边缘 */
+    width: fit-content;
+    min-width: 0;   /* P1 修复：grid 列的隐式 min-width:auto 会按内容的 min-content 撑住，宽度较大的缩略图会顶着列宽不缩，加这条才能让 fit-content 真的在窄视口下收缩 */
+    max-width: 100%;   /* P1 修复：fit-content 只是"取内容自然宽度"，本身不会被列宽反向限制——缩略图就算用了 flex-shrink，fit-content 算出来的还是没缩过的 max-content，这条才是真正让它不超过列宽的那一步 */
+    padding-top: calc(128px * 0.8);   /* 缩略图顶部对齐在"001"数字高度的 80% 处 */
+}
+
+.project-thumbs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 45px;   /* 图片行→文字区块的间距，原来 36px，两个项目统一改成这个 */
+}
+/* 1024-1440px 硬切换固定 30px，跟最近几次 fine-tune 的默认处理方式一致
+   （不做渐变）。.project-thumbs 是 001/002 共用的基础规则，两个项目
+   一起改 */
+@media (max-width: 1440px) {
+    .project-thumbs {
+        margin-bottom: 30px;
+    }
+}
+/* P1 修复（1024px+ 响应式排查，同一个问题在 DrayEasy 这张卡片上是这条
+   规则，跟 MobileConductor 的 nth-child 写法是两处独立的写死尺寸）：
+   两张图原来都是写死 496×352px，总宽 496×2+8(gap)=1000px，在
+   .project-body 可用宽度比这个窄的视口下会溢出。两张图尺寸相同，直接
+   等比例分配剩余空间（flex:1 1 0），aspect-ratio 保证缩放不变形，
+   max-width 锁住宽视口下精确等于原始设计尺寸 */
+.project-thumb-img {
+    flex: 1 1 0;
+    min-width: 0;   /* flex item 默认 min-width:auto，对有明确尺寸的 img 会按它的（未缩过的）尺寸兜底，flex-shrink 实际上不生效——这条才是真正让它能缩小的关键，光有 flex-shrink:1 没用 */
+    width: auto;
+    height: auto;
+    max-width: 496px;
+    aspect-ratio: 496 / 352;
+    object-fit: cover;
+    border: 1px solid var(--brand);
+    background: var(--bg-grey);
+}
+
+/* 项目2 · MobileConductor 两张图尺寸不一样（509×382 / 186×382），
+   跟项目1统一的 496×352 分开覆盖。两图之间的间距也单独覆盖成 16px，
+   不是 .project-thumbs 全局共用的 8px（项目1还是维持 8px 不变） */
+/* 两张图整体放大 5%（509×382/186×382 → 534.45×401.1/195.3×401.1），
+   增大的部分往右上扩张：宽度变宽本来就是从每张图自己的左边缘往右长
+   （flex 行默认行为，不用额外处理）；高度这块一开始想靠 align-items:
+   flex-end 让图片顶部往上抬——实测发现没用，因为 align-items 只管
+   "两张图在行内怎么互相对齐"，不管 .project-thumbs 这个行本身在正常
+   文档流里的位置——行自己的顶边是被上面的内容锚定住的，长高之后只会
+   把行自己的底边往下推，两张图跟着一起往下移，不是往上长。真正要"往上
+   长、底边不动"，得把行自己往上移动等于长高部分的距离（401.1-382=
+   19.1px），margin-top:-19.1px 补偿掉，行的顶边往上抬 19.1px、底边
+   正好停在原来的位置 */
+.project-card--mirror .project-thumbs { gap: 16px; margin-top: -19.1px; }
+/* P1 修复（1024px+ 响应式排查）：原来两张图都是写死 width/height，
+   总宽 534.45+195.3+16=745.75px，在 .project-body 的可用宽度比这个
+   数字窄的视口下（约 1280px 附近开始）会溢出。改成 flex-grow 比例 +
+   aspect-ratio：grow 权重按原始宽度比例 534.45:195.3 分配，两张图会
+   按同一个比例一起缩放（不是各自独立缩，保持"图1比图2宽这么多"的
+   相对关系），aspect-ratio 保证缩放时不变形，max-width 锁住宽视口下
+   精确等于原始设计尺寸（≥745.75px 可用宽度时增长会被这个挡住，效果
+   跟原来写死 px 完全一样，不会比设计稿更大） */
+.project-card--mirror .project-thumbs img:nth-child(1) {
+    flex: 2.7365 1 0;
+    min-width: 0;   /* 同上 .project-thumb-img 那条注释——flex item 默认 min-width:auto 会挡住 flex-shrink */
+    width: auto;
+    height: auto;
+    max-width: 534.45px;
+    aspect-ratio: 534.45 / 401.1;
+}
+.project-card--mirror .project-thumbs img:nth-child(2) {
+    flex: 1 1 0;
+    min-width: 0;
+    width: auto;
+    height: auto;
+    max-width: 195.3px;
+    aspect-ratio: 195.3 / 401.1;
+}
+
+.project-title {
+    font-family: var(--font-avenir);
+    font-weight: 500;
+    font-size: 24px;
+    line-height: 1.3;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.project-tags {
+    font-family: var(--font-avenir);
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 120%;
+    color: var(--text-secondary);
+    margin-bottom: 45px;   /* 文字区块→按钮的间距，统一成跟"图片→文字"一样的 45px */
+}
+/* 1024-1440px 硬切换固定 30px，跟上面 .project-thumbs 那条同一套处理 */
+@media (max-width: 1440px) {
+    .project-tags {
+        margin-bottom: 30px;
+    }
+}
+/* 原来这里是 white-space:nowrap（故意让这行长标签探出 .project-info
+   420px 的列宽），1440px 宽视口下够用，但 1024px 桌面区间排查
+   （P0 修复过程中新发现的第三处溢出源）发现这个"探出去"在窄一点的
+   桌面宽度下会真正撑穿页面、需要横向滚动条，不再是"周围没有内容会被
+   遮挡"那种无害溢出。改回默认换行——落回 .project-info 的 420px 列宽
+   内换行，跟其它项目卡片的 tags 行是同一个行为，不再是特例 */
+
+.project-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+}
+
+/* hug content——宽度由文字+padding 自然撑开，不写死 width，
+   不然 "View Case Study" 在 20px Heavy 字重下会被固定宽度挤成两行 */
+.btn-primary,
+.btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    width: fit-content;
+    min-height: 53px;
+    padding: 8px 16px;
+
+    font-family: var(--font-avenir);
+    font-weight: 800;
+    font-size: 20px;
+    line-height: 27px;
+    white-space: nowrap;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+.btn-primary svg,
+.btn-secondary svg { width: 24px; height: 24px; flex: none; }
+
+.btn-primary {
+    background: var(--brand);
+    color: #fff;
+}
+.btn-primary:hover { background: #005ba3; }
+
+/* 还没做完 case study 的项目，"View Case Study" 按钮外观完全不变——
+   还是正常的 .btn-primary，点了不跳转，弹一个 Coming Soon 提示。
+   data-case-study-ready="false" 是这个行为的开关，由 content.js 的
+   initComingSoonModal() 读取；项目做完了，把这个属性删掉（或者把 href
+   换成真链接，同时删掉这个属性）就恢复正常跳转，不用碰这里的 CSS */
+
+.btn-secondary {
+    background: transparent;
+    border: 1px solid var(--brand);
+    color: var(--brand);
+}
+.btn-secondary:hover { background: var(--bg-blue); }
+
+/* ============================================================
+   Coming Soon 弹窗：点还没做完 case study 的"View Case Study"按钮
+   （data-case-study-ready="false"，见 content.js 的 initComingSoonModal）
+   弹出来的提示，不是页面跳转/展开。scrim+modal 是单例，appendChild 到
+   document.body，跟浮层里的 .hover-capsule 是同一个模式——不管在
+   content.html 独立访问还是 index.html 浮层里，body 都是同一个 body，
+   直接挂上去两边都能用，不用分场景处理。
+   z-index 特意比 .content-overlay-panel（91）高很多，保证在浮层里点
+   出来的时候能盖住浮层本身，不会被浮层的层级压在下面 ============================================================ */
+.coming-soon-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    background: rgba(20, 30, 50, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+}
+.coming-soon-scrim.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+.coming-soon-modal {
+    position: relative;
+    background: var(--bg-white);
+    border-radius: 16px;
+    padding: 40px;
+    width: calc(100% - 48px);
+    max-width: 420px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(20, 30, 50, 0.3);
+    transform: translateY(12px);
+    transition: transform 0.25s ease;
+}
+.coming-soon-scrim.is-visible .coming-soon-modal {
+    transform: translateY(0);
+}
+.coming-soon-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+.coming-soon-close:hover { background: var(--bg-grey); }
+.coming-soon-title {
+    font-family: var(--font-avenir);
+    font-weight: 800;
+    font-size: 22px;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+}
+.coming-soon-body {
+    font-family: var(--font-avenir);
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 1.5;
+    color: var(--text-secondary);
+    margin-bottom: 24px;
+}
+.coming-soon-cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    padding: 8px 24px;
+    background: var(--brand);
+    color: #fff;
+    border: none;
+    border-radius: 24px;
+    font-family: var(--font-avenir);
+    font-weight: 800;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+.coming-soon-cta:hover { background: #005ba3; }
+
+/* ============================================================
+   项目3 · SmartDevil：标题+标签+说明文字块是绝对定位，钉在
+   .project-meta 里（不是 .project-body）——因为定位基准是"003"数字
+   和 DELIVERED 标签的坐标，不是图片那一侧。.project-meta 本来就是
+   position:relative，也没有 overflow:hidden，文字块正常探出这个
+   128px 窄列，不会被裁掉。
+   left:0 = 跟"003"左边缘对齐；top 是 DELIVERED 标签底部 + 110px：
+     136.4px（标签底边，算法见上面 .connector-line 那段注释）+ 110 = 246.4px
+   ============================================================ */
+.smartdevil-text {
+    position: absolute;
+    top: 246.4px;
+    left: 0;
+    max-width: 524px;   /* 跟下面 .smartdevil-summary 的宽度对齐，标题/标签也别比它宽 */
+}
+
+/* 产品图+logo+数据标签叠在同一张 SVG 框架图形上，不是简单的"图片行"。
+   .smartdevil-visual 是这一整块的画布，尺寸跟 SVG viewBox 一致
+   （549×407，1:1 映射，容器内的 px 坐标就是 SVG path 里的坐标，
+   两边共用同一套基准），里面的图片/logo/标签全部绝对定位、逐条跟
+   path 坐标对过：
+     · 产品图：SVG 里对应矩形是 x:[1,322] y:[54,406]，图片给定尺寸是
+       322×345（比矩形矮 7px），要保证底边贴合 y=406 这条线，所以
+       top 用 406-345=61，不是矩形本身的顶边 54
+     · logo：矩形 x:[378,548] y:[1,145] 里居中是 left:397 / top:7，
+       再按要求整体下移 5px，变成 top:12
+     · 600K+ 标签：path 里那条伸向右边的细连接线终点是 (454,316)，
+       这个点就是标签的左上角，不是"贴右下角"那种简单定位——标签自己
+       142px 宽会超出 549 画布右边缘一截，这是预期内的（画布本来就没有
+       overflow:hidden，标签本来就该探出去跟线接上）
+   ============================================================ */
+.smartdevil-visual {
+    position: relative;
+    flex: none;
+    width: 549px;
+    height: 407px;
+}
+.smartdevil-frame {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+}
+.smartdevil-product {
+    position: absolute;
+    left: 1px;
+    top: 61px;     /* 406(底边线) - 345(图高)，保证底边贴合 */
+    width: 322px;
+    height: 345px;
+    object-fit: cover;
+    z-index: 1;
+}
+.smartdevil-logo {
+    position: absolute;
+    left: 397px;   /* rect B (378~548) 里居中：378 + (170-132)/2 */
+    top: 12px;     /* 居中值 7px，再按要求下移 5px */
+    width: 132px;
+    height: 132px;
+    object-fit: contain;
+    z-index: 1;
+}
+.smartdevil-metric {
+    position: absolute;
+    left: 439px;   /* 连接线终点 (454,316) 再整体左移 15px */
+    top: 316px;
+    z-index: 1;
+    box-sizing: border-box;
+    width: 142px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--brand);
+    border: 1px solid var(--brand);
+}
+.smartdevil-metric span {
+    font-family: var(--font-avenir);
+    font-weight: 800;
+    font-size: 20px;
+    line-height: 27px;
+    color: var(--bg-white);
+    text-align: center;
+}
+/* "(Sold on Taobao)" 这行按 20px/800 实测会宽到超出 142px 的盒子、
+   被迫折成 3 行溢出蓝色背景——先按更常见的"大数字+小说明"处理，
+   缩小这一行字号，跟设计稿对不上的话告诉我改回统一大小 */
+.smartdevil-metric small {
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 15px;
+}
+
+.smartdevil-summary {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    padding: 16px;
+    gap: 10px;
+    width: 524px;
+    height: 118px;
+    background: var(--bg-grey);
+    border: 1px solid var(--stroke);
+    border-radius: 12px;
+    margin-top: 60px;   /* 文字区块→说明块的间距，统一成跟"图片→文字"一样的 45px */
+}
+.smartdevil-summary p {
+    width: 490px;
+    font-family: var(--font-avenir);
+    font-weight: 350;   /* 介于 Book/Light 之间的自定义字重，Avenir 字体文件不支持
+                           的话浏览器自己的字重匹配算法会退到最近的可用字重 */
+    font-size: 14px;
+    line-height: 150%;
+    color: var(--text-primary);
+}
+.text-brand {
+    color: var(--brand);   /* 只变色不加粗 */
+    text-decoration: none;   /* About 2/3/4 里这个类现在也用在 <a> 上，去掉链接默认下划线，视觉上跟 003 那段纯 span 高亮保持一致 */
+}
+
+/* ============================================================
+   Sandbox 项目1 · Beyond Fingers：第一个用"左右两个独立容器"结构写的
+   项目——.project-visual（框+图片）和 .project-info（编号+标题+按钮）
+   显式拆成两个平级 flex 子项，不再是之前那种一个 grid 挤两列、标题还
+   要绝对定位钉进窄列的做法。以后做响应式，直接分别改这两个容器的布局
+   就行（比如竖屏下改 .project-row 成 flex-direction:column）。
+   这次先只改 Beyond Fingers 一个项目，如果调整顺利，后续再回头把
+   DrayEasy/MobileConductor/SmartDevil 也统一成这个模式。
+   .project-row 用跟 #work 一样的 1440px 画布（见下面 .content-section
+   .content-section--sandbox），不然 232px 间距 + 600px 框 + 文字列会在
+   960px 的默认画布里挤不下。
+   ============================================================ */
+.project-card--beyond-fingers {
+    /* Beyond Fingers 到下面小项目网格的间距，同样从分隔格子改成卡片
+       自己的 margin。跟 .project-card 那套同一次调整：触发点从 1200px
+       挪到 1350px，1672px 以上保持 200px 不变 */
+    margin-bottom: clamp(170px, calc(170px + (200 - 170) * (100vw - 1350px) / (1672 - 1350)), 200px);
+}
+/* 跟 .project-card 同一套新增层：≤1350px 硬切换固定 100px，
+   交接点同样在 1350px */
+@media (max-width: 1350px) {
+    .project-card--beyond-fingers {
+        margin-bottom: 100px;
+    }
+}
+.project-row {
+    display: flex;
+    max-width: 1440px;
+    margin: 0 auto;
+    /* 安全网：.connector-line--beyond-fingers 是相对 .project-info 左边
+       固定像素偏移算出来的斜线，不会跟着 margin-left 的收缩量精确同步；
+       .beyond-fingers-img2 也故意 right:-15px 凸出外框。这两个精确到
+       像素的装饰元素在极窄的 overlay 面板宽度下可能还剩几十像素微小
+       残余，加 overflow:hidden 兜底，保证不管数值算得多精确，视觉上都
+       不会真的溢出面板边缘（宽视口下这两个装饰元素本来就在行内，不会
+       被裁到） */
+    overflow: hidden;
+}
+/* <1600px：.project-row 自己也有 max-width:1440px + margin:0 auto，
+   跟 .content-section--sandbox（见上面新增的 1599px 断点）一样的问题——
+   区块的 1440 上限取消之后，.project-row 自己这层还会独立居中挤压一次。
+   margin-left/right:16px 也放在这里一起写（不是跟 .project-card 堆在
+   前面那条 1599px 断点里）——两条都是单类 .project-row，specificity
+   相同，必须写在这条基础规则后面才能真正生效，写在前面会被这条基础
+   规则的 max-width:1440px / margin:0 auto 盖掉（踩过这个坑：最初图
+   省事把它们跟 .content-section 那条规则堆在一起写在前面，没生效） */
+@media (max-width: 1599px) {
+    .project-row {
+        max-width: none;
+        margin-left: 16px;
+        margin-right: 16px;
+    }
+}
+/* 上一版用 width:fit-content 让 .project-row 自己收紧到跟内容一样宽，
+   确认过这样"连带撑满容器的能力也丢了"，不是想要的效果——改成保留
+   .project-row 撑满容器（不再覆盖 width，跟 ≥1250px 时同一套撑满
+   逻辑），改用 justify-content:space-between 让 .project-visual/
+   .project-info 分别贴住行的两端，中间的可用宽度全部作为两者之间的
+   间距被吃掉，右边不会再剩下多余空白。
+   .project-info 原本还有一条 margin-left（clamp 出来的视觉/文字间距，
+   见下面 .project-info 那条规则）——如果不清零，会跟 space-between
+   分配的间距叠加成两份间距。这条清零规则单独写在下面 .project-info
+   基础规则后面（同一个源码顺序问题：这两条选择器 specificity 相同，
+   写在这里会被下面那条基础规则盖掉），这里先只处理 .project-row 自己 */
+@media (max-width: 1249px) {
+    .project-row {
+        justify-content: space-between;
+    }
+}
+.project-visual {
+    flex: none;
+}
+/* <1600px：Beyond Fingers 这个模块本身偏高（833px），单独给一档整体
+   缩小 93%（缩小 7%，不是 10%），跟上面 001/002 项目卡片那套 gap
+   收缩联动无关，是它自己独立的固定断点。
+   .beyond-fingers-frame 内部两张图/外框/转角线全部是按 600×833 精确
+   算好的绝对定位坐标（见下面 .beyond-fingers-frame 的注释），只改
+   width/height 不会让这些子元素跟着重新计算位置，会散架错位——所以用
+   transform:scale(0.93) 整体缩放这个 600×833 的画布，内部所有子元素
+   的相对位置/比例天然跟着一起缩，不用逐个重算。
+   transform 不影响布局占位（.beyond-fingers-frame 自己在布局意义上
+   还是占 600×833），所以外层 .project-visual 要显式改成缩小后的
+   558×774.69（600/833 × 0.93），.project-row 的 flex 布局是按
+   .project-visual 这个显式尺寸算的，不是按它内部子元素实际渲染出来
+   多大算的，只有这样 .project-info 才会跟着腾出来的空间往左收，
+   真正达到"整体变矮/变窄"的效果，不是留一圈空白 */
+@media (max-width: 1599px) {
+    .project-visual {
+        width: 558px;     /* 600 * 0.93 */
+        height: 774.69px; /* 833 * 0.93 */
+    }
+    .beyond-fingers-frame {
+        transform: scale(0.93);
+        transform-origin: top left;   /* 左上角为缩放基准，缩小后的视觉尺寸（558×774.69）正好贴合外层缩小后的盒子，不会因为默认居中缩放而在盒子里留出偏移的空白 */
+    }
+}
+/* 任务描述给的示例代码把 transform:scale() 写在 .project-visual 自己
+   身上——排查过实际架构不是这样：.project-visual 只管显式改小
+   width/height（决定 .project-row flex 布局占多少空间），真正的
+   transform:scale 是加在 .beyond-fingers-frame 上的（它内部两张图/
+   转角线是按 600×833 精确坐标绝对定位的，只有整体 scale 才能让这些
+   子元素跟着同步缩放不错位，见上面 <1600px 那次的详细注释）。这次
+   1024-1440px 在 93% 基础上再乘 90%，按同一个模式实现，只是数值换成
+   0.837（0.93×0.9）：
+     .project-visual 的显式尺寸 = 600×837=502.2px（宽）/ 833×0.837=
+     697.221px（高）
+     .beyond-fingers-frame 的 scale 系数 = 0.837
+   必须写在上面 <1599px 那条规则后面——两条 media query 在 ≤1440px
+   时会同时匹配，写在后面的这条才能覆盖前面 0.93/558×774.69 那组值，
+   只在 ≤1440px 时生效，1440-1599px 之间维持原来的 93% 不变 */
+@media (max-width: 1440px) {
+    .project-visual {
+        width: 502.2px;     /* 600 * 0.837 */
+        height: 697.221px;  /* 833 * 0.837 */
+    }
+    .beyond-fingers-frame {
+        transform: scale(0.837);
+    }
+}
+/* <1250px 再在 0.837 基础上乘 90%，跟上面同一个模式，同一个 1250 断点
+   （跟 .project-row 的 <1250px 那条规则用同一个分界）：
+   scale = 0.837×0.9 = 0.7533
+   .project-visual 显式尺寸 = 600×0.7533=451.98px / 833×0.7533=627.4989px
+   必须写在上面 <1440px 那条规则后面才能覆盖 */
+@media (max-width: 1249px) {
+    .project-visual {
+        width: 451.98px;
+        height: 627.4989px;
+    }
+    .beyond-fingers-frame {
+        transform: scale(0.7533);
+    }
+}
+/* <1100px 再在 0.7533 基础上乘 90%，同一个模式：
+   scale = 0.7533×0.9 = 0.67797
+   .project-visual 显式尺寸 = 600×0.67797=406.782px / 833×0.67797=564.74901px
+   必须写在上面 <1250px 那条规则后面才能覆盖 */
+@media (max-width: 1099px) {
+    .project-visual {
+        width: 406.782px;
+        height: 564.74901px;
+    }
+    .beyond-fingers-frame {
+        transform: scale(0.67797);
+    }
+}
+.project-info {
+    position: relative;   /* .connector-line 的绝对定位基准 */
+    /* .beyond-fingers-frame 是 flex:none 的固定 600px 画布（内部装饰线是按
+       600×833 精确算的像素坐标，不能靠缩放/换算安全地压缩），1024-1213px
+       之间容不下"固定 232px 间距 + 固定 600px 框"，只能从间距上让出空间。
+       实测溢出量正好是 max(0, 1213-容器宽度) 的线性关系，下面这个 clamp
+       就是把间距按同样斜率反着让出去，让整行在 1024px 起始终就不再溢出：
+       100cqw-981px 在容器宽度 1024px 处正好等于 43px，1213px 处正好
+       等于 232px（原始值/上限），中间是精确抵消溢出量的线性过渡。
+       用 cqw 而不是 vw 是因为 overlay 面板里容器实际宽度比视口窄（见
+       上面 .content-section--sandbox 的 container-type 注释）——vw 只
+       认视口，在面板里会少收缩，继续溢出。下限给到 16px（只留一点
+       呼吸空间，不完全贴死）而不是 43px，是因为 overlay 面板比独立
+       页面还要再窄一截，43px 那档在面板里不够用；配合 .project-row
+       的 overflow:hidden 兜底，装饰线一类固定像素偏移的元素不会在
+       这个下限之外的极端情况里视觉穿帮 */
+    margin-left: clamp(16px, calc(100cqw - 981px), 232px);
+    max-width: 420px;   /* Figma 没标这块的宽度，先按标题长度估一版，跟设计稿对不上告诉我改 */
+}
+/* <1250px 这段范围内，.project-visual/.project-info 之间的间距改交给
+   .project-row 的 justify-content:space-between 统一分配（见上面
+   .project-row 那条规则），这里的 margin-left 清零，避免两份间距叠加 */
+@media (max-width: 1249px) {
+    .project-info {
+        margin-left: 0;
+    }
+}
+.beyond-fingers-title {
+    margin-top: 102px;   /* MUSIC HARDWARE 标签底边到标题顶部的间距，Figma 标注给的原始值 */
+    margin-bottom: 30px;   /* 临时改大验证间距是否真的可控，确认后再改回目标值 */
+    /* 排查过：光靠 width:fit-content 对这段会自动折行的文字没用——浏览器
+       的 fit-content/max-content 只会拿"整段文字不折行时的自然宽度"
+       （这里实测 768px）跟"父容器让出的可用宽度"比较取较小值，折行后
+       两行各自的真实宽度（377px/384px）不参与这个计算，算出来恒等于
+       容器宽度 420px，跟折不折行、给不给 max-width 都无关（都试过，
+       结果一样）。要让整个盒子收缩贴合，只能不再依赖浏览器自动折行，
+       换成 HTML 里手动插入 <br>（跟 opening-scene-text 那次做法一样）
+       在原来自然折行的位置断开，两行都变成"不会再折行的独立行"，
+       fit-content 这时候才能正确量出真实还是较宽的那一行（384.34px） */
+    width: fit-content;
+}
+/* 1024-1440px 硬切换固定 70px，跟最近几次 fine-tune 同一套处理方式 */
+@media (max-width: 1440px) {
+    .beyond-fingers-title {
+        margin-top: 80px;
+    }
+}
+/* "001" 绝对定位钉在"外框顶部往下 145px"（.project-info 顶部跟外框顶部
+   对齐，见上面 .project-row 的说明），不再是紧贴 .project-info 顶部的
+   流式元素——挪成绝对定位之后不占布局空间了，下面的标签/连接线要跟着
+   补偿同样的 145px 偏移，才能维持原来"标签紧跟数字下面"的相对关系 */
+.number-001 {
+    position: absolute;
+    top: 145px;
+    left: 0;
+}
+/* 补偿："001"原本在流式布局里高度是 128px×0.8=102.4px，加上标签原有的
+   10px 上边距，标签现在要从 145px（数字新位置）算起：145+102.4+10=257.4px */
+.project-info .status-tag {
+    margin-top: 257.4px;
+}
+/* ≤1440px 硬切换成固定 10px 间距：.display-number 在这个断点下 font-size
+   改成了 96px（见上面那条 @media (max-width:1440px) .display-number
+   规则），"001"的行盒高度变成 96×0.8=76.8px（不再是 257.4px 那条注释
+   算的 102.4px），257.4px 这个值没跟着换算过，实测≤1440px 时实际间距
+   已经变成 35.59px，不是 10px。重新按 96px 算：145+76.8+10=231.8px */
+@media (max-width: 1440px) {
+    .project-info .status-tag {
+        margin-top: 231.8px;
+    }
+}
+/* 连接线原本是照"001"在文档流顶部（top:0）时的位置算的，跟着"001"一起
+   下移 145px：170.61(003 那条线原来的 top) + 145 = 315.61px */
+.connector-line--beyond-fingers {
+    top: 315.61px;
+}
+/* 拉近幅度改成减半，且不再做 1024-1440 渐变，直接硬切换成固定坐标：
+   原始位置 (top:315.61, left:206) → 上一版拉近到 (top:264.427,
+   left:144.2)，移动向量 = (264.427-315.61, 144.2-206) = (-51.183, -61.8)，
+   取一半 = (-25.5915, -30.9)，加回原始位置：
+   top  = 315.61 - 25.5915 = 290.0185px
+   left = 206 - 30.9 = 175.1px
+   （left 原本由 .connector-line--003 的响应式规则给出，这里单独覆盖，
+   跟 .connector-line--003 那条 003 专用的渐变曲线互不影响——003 还在
+   注释里隐藏着，不受这次调整波及） */
+@media (max-width: 1440px) {
+    .connector-line--beyond-fingers {
+        top: 290.0185px;
+        left: 175.1px;
+        /* 在基础 .connector-line 那条 170.4px 的基础上再缩短 10%（只针对
+           Sandbox 001，001 自己维持 170.4px 不变）：170.4×0.9=153.36px */
+        width: 153.36px;
+    }
+}
+
+/* 图1/图2 + 外框 + 转角装饰线的画布，尺寸跟 Figma 容器 1:1（600×833），
+   容器左上角对应 Figma 绝对坐标 (97, 3887)——下面子元素坐标都已经减去
+   这个原点换算成容器内部相对坐标，不是 Figma 画布的绝对坐标 */
+.beyond-fingers-frame {
+    position: relative;
+    flex: none;
+    width: 600px;
+    height: 833px;
+}
+.beyond-fingers-outline {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+}
+/* 图1 现在用的是裁好的成品图，展示尺寸锁定 456×308——原图实际尺寸是
+   1179×788（比例 1.496），跟 456:308（比例 1.481）差一点点，用 fill
+   而不是 cover，避免再裁掉一点内容（用户已经在外部裁过一次了，这里
+   只是缩放显示，不需要二次裁切） */
+.beyond-fingers-img1 {
+    position: absolute;
+    left: 0;
+    top: 56px;
+    width: 456px;
+    height: 308px;
+    object-fit: fill;
+    border: 1px solid var(--brand);
+    z-index: 1;
+}
+.beyond-fingers-img2 {
+    position: absolute;
+    right: -15px;   /* 负值：往外凸出外框右边缘 15px，不是往内缩 */
+    bottom: 48px;
+    width: 378px;
+    height: 372px;
+    object-fit: cover;
+    border: 1px solid var(--brand);
+    z-index: 1;
+}
+.beyond-fingers-corner-line {
+    position: absolute;
+    height: 0;
+    border-top: 0.5px solid var(--stroke);
+    z-index: 1;
+}
+.beyond-fingers-corner-line--h {
+    width: 123px;
+    left: 115px;
+    top: 572px;
+}
+.beyond-fingers-corner-line--v {
+    width: 207px;
+    left: 115px;
+    top: 365px;
+    transform: rotate(90deg);
+    transform-origin: left top;
+}
+
+/* ============================================================
+   Sandbox 项目2 · 四个小项目的 2×2 卡片墙：整块内容在 1440×1000 的画布
+   里居中（.sandbox-grid-wrapper），网格本身 1200px 宽。横向 gap 24px、
+   纵向 gap 32px 是按两行卡片各自的实际高度反推出来的（1200-588×2=24；
+   870-(420.28+418)≈32，870 是画布里留给网格的高度），不是随便挑的整数。
+   卡片本身就是可点击的 <a>，hover 时鼠标旁跟着一个"View Project"胶囊，
+   逻辑见 content.js 的 initMiniGridHoverCapsules()。
+   ============================================================ */
+/* P0 修复（1024px+ 响应式排查）：.sandbox-grid-wrapper 原来是写死的
+   1440×1000px，比 1440px 窄的视口（包括新策略要求保持桌面版的整个
+   1024-1440 区间）都会横向溢出，溢出量精确等于 1440-视口宽度。改成
+   width:100% + max-width:1440px，让它跟着已经是响应式的父容器
+   （#sandbox 本身就是 max-width:1440px + margin:0 auto）一起收缩，
+   宽视口下（≥1440+主内容区 padding）行为跟原来完全一样。
+   height 先不动——这次只解决横向溢出，纵向留白多一点不是本次范围 */
+.sandbox-grid-wrapper {
+    width: 100%;
+    max-width: 1440px;
+    margin: 0 auto;   /* 原来完全靠父容器 #sandbox 自己也是 max-width:1440px 顶住才不用自己居中，
+                          #sandbox 下面新增的 <1600px 断点要取消它的 1440 上限（见下方），
+                          那之后父容器会比 1440 宽，这里必须有自己的 margin:auto 才能继续居中，
+                          不然会贴父容器左边缘 */
+    height: 1000px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+/* 网格本身也是同一个问题：588px 588px 两列写死宽度，改成 1fr 1fr 跟着
+   容器宽度等比缩放，width 从写死的 1200px 改成 100%+max-width:1200px，
+   宽视口下精确复现原来的 1200px 效果 */
+.sandbox-mini-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 24px;
+    row-gap: 32px;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+.mini-project-card {
+    display: block;
+    width: 100%;   /* 原来是写死 588px——网格列宽已经用 1fr 控制了，卡片本身跟着列宽走 */
+    height: fit-content;
+    background: var(--bg-white);
+    padding: 16px;
+    box-sizing: border-box;
+    cursor: pointer;
+    position: relative;   /* hover 胶囊虽然是 fixed 定位跟着鼠标走，不依赖这个，但保留着跟设计稿给的结构一致 */
+    text-decoration: none;
+}
+.mini-project-card img {
+    width: 100%;
+    display: block;
+    margin: 0 auto;   /* 图3 比内容区窄，水平居中，不贴左边缘 */
+    object-fit: cover;
+}
+/* 图1/2/4 原来是写死 height（甚至图2/4 连 width 也写死成 556px，跟
+   .mini-project-card img 的 100% 基础规则算出来的值凑巧一样，但写死
+   之后就不会跟着卡片收缩了）——改成 aspect-ratio，配合上面 width:100%
+   的基础规则，图片能跟着卡片宽度等比缩放，不会在卡片变窄之后比卡片
+   本身还宽而溢出。
+   图3 是 Figma 原图故意比内容区（556px）窄的情况（374/556≈67.27%），
+   用百分比宽度保持"比卡片窄一截"这个相对比例，不是简单撑满 100% */
+.mini-project-card:nth-child(1) img { aspect-ratio: 556 / 322.28; }
+.mini-project-card:nth-child(2) img { aspect-ratio: 556 / 322.28; }
+.mini-project-card:nth-child(3) img { width: 67.27%; aspect-ratio: 374 / 320; }
+.mini-project-card:nth-child(4) img { aspect-ratio: 556 / 320; }
+.mini-project-card .title-3 {
+    margin-top: 24px;   /* 图片到标题 */
+    font-family: var(--font-avenir);
+    font-weight: 500;
+    font-size: 16px;
+    color: var(--text-primary);
+}
+.mini-project-card .tags-line {
+    margin-top: 4px;   /* 标题到 tag 文字 */
+    font-family: var(--font-avenir);
+    font-weight: 400;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+/* hover 胶囊：JS 动态创建、appendChild 到 body，跟着鼠标移动——
+   position:fixed 是因为要跟随视口坐标（mousemove 事件给的是 clientX/Y），
+   不是卡片内部的相对坐标，放在卡片里用 absolute 做不到跟手 */
+.hover-capsule {
+    position: fixed;
+    background: var(--brand);
+    color: var(--bg-white);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-family: var(--font-avenir);
+    font-weight: 800;
+    font-size: 14px;
+    pointer-events: none;
+    opacity: 0;
+    box-shadow: 0 4px 12px rgba(20, 30, 50, 0.08);   /* 一点点深度，让胶囊看起来是浮在鼠标旁边的，不是贴在玻璃表面 */
+    transition: opacity 0.15s ease;
+    z-index: 100;
+}
+
+/* P2 修复（1024px+ 响应式排查）：原来是 max-width:1180px，站内新定的
+   策略是"视口 ≥1024px 都保持桌面版体验"，1180 比 1024 宽，会让
+   1024-1179px 这段本该是桌面版的区间提前触发这一整套折叠成单栏的
+   窄屏布局。改成 1023px（不是 1024px——策略说的是"≥1024 是桌面"，
+   断点要在 1024 的下一个像素才对，不然 1024px 本身会被这条 max-width
+   规则命中，边界正好反了）。
+   经过 P0/P1 两处修复后，缩略图/Sandbox 网格在 1024px 下已经是真正
+   响应式收缩、不再需要靠这里的整段折叠才能不溢出，这条规则现在只
+   在 1023px 及以下（未来移动端专属设计的范围）生效，不再是桌面区间
+   的兜底方案 */
+@media (max-width: 1023px) {
+    .work-banner { height: auto; flex-wrap: wrap; padding: 16px; border-radius: 24px; }
+    .section-title { font-size: clamp(40px, 8vw, 72px); text-align: left; }
+    .project-card { grid-template-columns: 1fr; column-gap: 0; row-gap: 24px; }
+    .project-body { padding-top: 0; }
+    .connector-line { display: none; }
+    .project-thumbs { flex-wrap: wrap; }
+    .project-thumb-img { width: 100%; max-width: 496px; height: auto; aspect-ratio: 496 / 352; }
+}
+
+
+/* ============================================================
+   About：横向 scroll-jacking 画廊。.about-scroll-wrapper 撑出一段纵向
+   缓冲区，.about-sticky 用 position:sticky 钉在视口内、overflow:hidden
+   裁掉 .about-track 横向溢出的那部分卡片；纵向滚过这段缓冲区、且确实
+   钉住了的时候，about.js 拦截 wheel 事件把纵向滚动量转成 .about-track
+   的横向位移，滚到头/滚到底才放行默认的纵向滚动。
+
+   缓冲区高度曾经是 250vh，实测发现这个数值理解错了这套机制的原理——
+   0<progress<1 的整个横向滚动过程里，about.js 每次 wheel 都
+   e.preventDefault()，真实的纵向 scrollY 几乎完全不动（实测：从进入
+   钉住状态到 progress 滚到 1，scrollY 纹丝不变）。也就是说缓冲区里
+   真正被"消耗"掉的纵向滚动距离约等于 0，缓冲区多出来的高度（250vh
+   减去 sticky 自己的 100vh）在横向内容滚完之后，会变成一段用户必须
+   继续空滚、但页面上什么反应都没有的死区——实测 900px 视口下这段死区
+   足有 1350px（≈1.5 屏），横向画廊明明已经到底了，纵向却还要再滚
+   一大截才能真正离开 #about。
+   缓冲区真正需要的高度只是"比 sticky 自己高一点，让 position:sticky
+   有空间可以钉住/松开"，不需要预留滚动手感的缓冲——手感完全是 wheel
+   handler 自己内部用 WHEEL_TO_PROGRESS/MAX_STEP 控制的，跟这段 DOM
+   高度没关系。改成 sticky 高度 + 一小截（80px，给钉住/松开的过渡留一点
+   呼吸感，不是 0），画廊一滚到底，纵向滚动马上就能继续，不再空转 */
+.about-scroll-wrapper {
+    position: relative;
+    height: calc(100vh + 80px);
+}
+.about-sticky {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow: hidden;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;   /* 之前是 center，留白靠"剩余空间平分"，没法钉死成具体的数值；
+                                    改成贴底 + padding-bottom，进度条下方留白才是一个可控的固定值 */
+    /* 进度条下方留白的真正控制点——不是 .progress-bar-track 自己的
+       margin-bottom（它一直是 0），是这个 padding-bottom。同时注意：
+       在 justify-content:flex-end 这套布局里，想让内容整体上下移动，
+       只能靠改这个 padding-bottom，改 .about-track 的 margin-top 没用
+       （flex-end 的剩余空间分配机制会把那部分 margin 原样吃掉，实测
+       delta=0） */
+    padding-bottom: 55px;
+}
+/* 650-720px 区间给整个画廊（.about-track）再叠一层整体收缩，在图片
+   自己那层收缩（720px floor 已经排查确认，四张图片、间距的 clamp
+   全部在 720px 就封顶了，650-720 这段本来完全没反应）的基础上，额外
+   再让 about-track 整体缩小到 90%。
+
+   排查过 about.js（updateVisuals()）用行内样式
+   track.style.transform='translateX(...)' 直接控制横向滚动位移——
+   行内样式会整个覆盖 CSS 里写的 transform，不是叠加，如果直接在
+   .about-track 自己身上写 transform:scale()，一滚动就会被这行内样式
+   整个冲掉，等于没生效。所以缩放挪到新包一层的 .about-track-scale-wrap
+   上，.about-track 自己完全不动，横向滚动的 JS 逻辑不受任何影响。
+
+   transform 本身只影响视觉渲染，不会让 .about-sticky（flex 列，
+   height:100vh，overflow:hidden）真正腾出布局空间——光缩放不够，还得
+   让这层 wrap 自己的 height 也变小，.about-sticky 的 flex 布局才会
+   真的按更小的高度去分配空间，不然会因为父级还留着按未缩放高度算的
+   占位、内容被裁切。用的是跟 Beyond Fingers/about-me-visual 那两次
+   同一个模式：外层显式定一个缩小后的 height，内层用 transform:scale
+   把视觉渲染缩到跟这个 height 精确对应。
+   （考虑过用 zoom 代替 transform:scale 直接解决布局占位的问题——zoom
+   确实会影响布局尺寸，但也会改变 offsetWidth/offsetLeft 这些 API 在
+   缩放子树内部的取值，about.js 的 recalcMaxTranslate() 正是靠这些
+   API 换算横向可滚动距离的，一部分在缩放子树内读（lastCard），一部分
+   在外面读（sticky.offsetWidth），两边基准不一致会直接算错横向滚动
+   范围——风险太高，不选这条路）。
+
+   height 的两个端点是实测量出来的（不是套用之前的写死数字）：
+   720px 视口下 .about-track 现在的实际高度（四张图片已经收到 720px
+   floor 之后）是 608.89px，650px 目标是 608.89×0.9≈518.03px——只在
+   ≤720px 才覆盖，>720px 保持 height:auto，不影响 720-960px 那段图片
+   还在连续变化的既有逻辑（如果在这里也写死 720px 端点的高度，720-960
+   之间图片继续收缩时 wrap 的高度却不跟着变，会跟内容实际高度对不上） */
+@media (max-height: 720px) {
+    .about-track-scale-wrap {
+        height: clamp(518.03px, calc(518.03px + (608.89 - 518.03) * (100vh - 650px) / (720 - 650)), 608.89px);
+        transform: scale(clamp(0.9, calc(0.9 + (1 - 0.9) * (100vh - 650px) / (720px - 650px)), 1));
+        transform-origin: top left;
+    }
+}
+.about-track {
+    display: flex;
+    /* 之前是 center——按每张卡片自己的总高度居中，卡片高度不一样（图片
+       大小、正文行数都不同），标题在各自卡片顶部（margin-top:0，四张
+       都一样），但卡片顶部本身因为居中对齐落在不同高度，标题看起来就
+       "各自为政"没对齐。改成 flex-start，所有卡片顶部对齐同一条线，
+       标题自然也对齐了——不需要也不能靠给标题分别调 margin-top 来凑，
+       那样图片/正文一变卡片高度，又得重新调一遍 */
+    align-items: flex-start;
+    /* 各卡片之间的间距现在不是统一值了（1→2 保持 700px 不变，2→3、3→4
+       改成 400px，4 后面留 500px 收尾），gap 是整个 flex 容器统一一个值，
+       没法给不同的相邻卡片对设不同的间距——改回每张卡片自己的
+       margin-right，见下面各 .about-card--N 的规则 */
+    /* 左边距不是拍脑袋的数字——卡片1（.about-card--me）内容本身宽度是
+       402px（.about-card-body 的定宽），要在 1440px 画布内居中显示，
+       左边距 = (1440-402)/2 = 519px。这是"先算出内容宽度、再反推居中
+       所需的边距"，不是先定一个 519px 然后凑内容去适应它——如果以后
+       卡片1的内容宽度变了，这个 519 也要跟着重新算。右边不再留同样的
+       519px——卡片4 自己的 margin-right:500px 就是"最后收尾留白"，
+       两个都留只会叠成 1019px，不是要的效果 */
+    /* 各段落间距这次不再统一，拆成不同比例（卡片1左侧30、1→2是50、
+       2→3和3→4都是30、卡片4右侧30），不是 gap（gap 只能设一个统一值，
+       没法给不同的相邻卡片对设不同间距，见更早之前"改回每张卡片自己
+       margin-right"那次的注释），所以每段都是 track 的 padding 或者
+       某张卡片自己的 margin-right 单独设置。
+       卡片4右侧的收尾留白这次改成 track 自己的 padding-right（不再是
+       卡片4的 margin-right，见下面 .about-card--4），about.js 的
+       recalcMaxTranslate() 本来就分别读 track 的 paddingRight 和
+       lastCard 的 marginRight 两个独立的值相加，不管留白具体是哪一种
+       实现都能正确算出来，不用改 JS。
+       vw 单位随 resize 变化会被 window.resize 监听器自动重新量一遍
+       （见 about.js 的 onResize()），同样不用同步改 JS */
+    /* >1674px 之后封顶，不再继续随视口变宽增大——用 min() 直接跟视口
+       宽度为 1674px 时算出的像素值比大小，不用额外写 media query：
+       视口越宽，vw 值越大，超过 1674px 之后 vw 值就会大于这个固定
+       封顶值，min() 自然选中封顶值；视口没到 1674px 时 vw 值更小，
+       min() 还是选 vw 那一侧，跟原来的行为完全一样 */
+    /* 左右两侧不再是同一个值——卡片1左侧改成 32vw（封顶 535.68px =
+       1674×0.32），卡片4右侧维持 30vw（封顶 502.2px）不变，拆成两条
+       longhand，不能再用一条 shorthand 简写 */
+    padding-left: min(32vw, 535.68px);
+    padding-right: min(30vw, 502.2px);   /* 1674 * 0.3 = 502.2px */
+    will-change: transform;
+}
+.about-card {
+    flex: 0 0 auto;
+    width: min(70vw, 900px);
+}
+
+/* 卡片1·me：标题+正文一组（内部左对齐），下面是照片+"(me)"装饰字+
+   手写风格 info 卡。宽度不跟其他卡片一样用 .about-card 的
+   min(70vw,900px)——那是给"标题+拍立得+正文"这种横向内容准备的，这张
+   卡片自己按内容宽度走（文字组 520px 是估的，Figma 没给这块具体宽度，
+   跟设计稿对不上告诉我改），图片贴文字组的左边缘对齐（flex 列默认就是
+   贴左，不用额外处理） */
+.about-card--me {
+    display: flex;
+    flex-direction: column;
+    flex: 0 0 auto;
+    width: fit-content;   /* 覆盖 .about-card 的 min(70vw,900px)——那是给横向卡片准备的，这张卡片要按自己内容（402px 宽的正文）走 */
+    margin-top: 16px;   /* 在 .about-track 统一 flex-start 对齐的基础上，卡片1单独再往下微调 16px */
+    margin-right: min(45vw, 753.3px);   /* 卡片1→2 的间距，45vw，>1674px 封顶（1674*0.45=753.3px） */
+    /* 600-650px 视口高度：标题在 600px 极限高度下被裁掉看不见，整张
+       卡片往下移最多 30px 腾出标题的可视空间。排查过这张卡片自己身上
+       目前没有任何 transform（缩放是加在后代 .about-me-visual 这个
+       图片画布上的，不是卡片整体），不存在需要合并的既有 transform。
+       给的公式原样有个单位错误：30px*(650px-100vh) 是长度乘长度，
+       算出来是面积不是长度，除以裸数字 (650-600) 也没法把单位换算
+       回来——改成除以 (650px-600px) 这个带单位的长度，长度/长度先
+       消成无量纲比例，再乘 30px 才是合法的长度结果 */
+    transform: translateY(clamp(0px, calc(30px * (650px - 100vh) / (650px - 600px)), 30px));
+}
+.about-card-title {
+    /* 20px → 16px，视口高度 860-960px 区间线性过渡（下限从 720px 提前到
+       860px，860px 以下直接固定 16px，不再继续变化），四张卡片统一，
+       不做卡片区分（跟原来"标题到正文20px不是卡片1专属"是同一个
+       共享规则，这次响应式收缩延续这个共享范围） */
+    margin-bottom: clamp(16px, calc(16px + (20 - 16) * (100vh - 860px) / (960 - 860)), 20px);
+    font-family: var(--font-avenir);
+    font-weight: 500;   /* Title 2 = Medium */
+    font-size: 24px;
+    color: var(--brand);
+}
+
+/* .about-me-visual-wrap 决定这块内容实际占据的布局尺寸/间距——
+   响应式收缩（55px→27.5px margin-top，344×435→265.4×335.5px 尺寸，
+   跟视口高度 720-960px 联动）全部发生在这一层。
+   .about-me-visual 自己保持原始 344×435 不变，靠 transform:scale
+   整体缩放画布——装饰字/info卡都是绝对定位、按"相对画布左上角"的固定
+   像素坐标摆的（跟 SmartDevil 那套 SVG 画布同一个思路），只缩外层
+   尺寸不会让它们跟着同步缩小，会错位；scale 缩放整个渲染出来的子树，
+   内部这些绝对定位元素的相对位置/比例天然跟着一起缩，不用重新换算
+   坐标（跟 Beyond Fingers 那次 .project-visual/.beyond-fingers-frame
+   的处理方式相同）。"(me)" 装饰字（.about-me-deco）也是这个子树里的
+   一员，天然跟着一起缩放，不用单独处理——实测验证过。
+   scale 只影响视觉渲染不影响布局占位，所以外层 wrap 的 width/height
+   要单独用同一条曲线的 clamp() 显式设定，两层数值必须严格对应（wrap
+   的宽高 = .about-me-visual 原始 344×435 × 同一个缩放系数），否则
+   视觉尺寸和布局占位对不上。
+   缩放系数第二轮从 6/7≈0.857143 改成 6/7×0.9≈0.771429（再多缩 10%），
+   960px 这一档的原始值（1/344×435）不变，只改 720px 这一档的下限 */
+.about-me-visual-wrap {
+    /* 下限从 27.5px 再压到 24px——断点区间沿用当前已生效的 720-960px
+       （核实过：改标题/正文间距那次只挪了那两项的断点到 860px，这项
+       margin-top 一直还是原来的 720-960px，没跟着一起挪） */
+    margin-top: clamp(24px, calc(24px + (55 - 24) * (100vh - 720px) / (960 - 720)), 55px);
+    /* 650-720px 新增一段，在原来 720px floor（265.4/335.5）基础上再减去
+       一段 650-720 区间才生效的"欠款"——用减法而不是重新写一遍三段式，
+       是为了不动原来 720-960 那段已经验证过的公式，只在下面再叠一段。
+       650px 目标 238.84/302.01 是排查阶段量出来的实际渲染尺寸 ×0.9
+       算出来的，不是套旧的基准数字 */
+    width: calc(
+        clamp(265.4px, calc(265.4px + (344 - 265.4) * (100vh - 720px) / (960 - 720)), 344px)
+        - clamp(0px, calc(26.56px * (720px - 100vh) / 70px), 26.56px)
+    );
+    height: calc(
+        clamp(335.5px, calc(335.5px + (435 - 335.5) * (100vh - 720px) / (960 - 720)), 435px)
+        - clamp(0px, calc(33.49px * (720px - 100vh) / 70px), 33.49px)
+    );
+}
+.about-me-visual {
+    position: relative;
+    width: 344px;
+    height: 435px;
+    transform-origin: top left;
+    /* 缩放系数 6/7×0.9≈0.771429 → 1，用长度/长度相除消掉单位得到无量纲的
+       比例数（scale() 只接受纯数字），跟外层 wrap 的 width/height
+       clamp 用的是同一条 (100vh-720px)/(960px-720px) 插值曲线，
+       在任意视口高度下两层缩放结果都精确对应。
+       650-720px 再叠一段：720px floor(0.771429) 减去一个只在
+       650-720px 才生效的欠款，650px 时精确减到 0.694286，
+       跟外层 wrap 那条减法用的是同一条 (720px-100vh)/70px 曲线，
+       保证两层缩放结果继续精确对应 */
+    transform: scale(calc(
+        clamp(0.771429, calc(0.771429 + (1 - 0.771429) * (100vh - 720px) / (960px - 720px)), 1)
+        - clamp(0, calc(0.077143 * (720px - 100vh) / 70px), 0.077143)
+    ));
+}
+/* About 区块照片统一投影——不只是 selfie 一张图专属，2/3/4 屏的拍立得
+   照片以后也复用这同一套阴影参数，避免每张图片各写一遍 */
+.photo-shadow {
+    box-shadow: 0 24px 92.6px rgba(0, 0, 0, 0.08);
+}
+.about-me-photo {
+    position: relative;   /* 不设 position 的话默认 static，跟"是否有 z-index"无关，
+                              static 元素在层叠顺序里天生垫底、排在所有 positioned
+                              元素下面（不看 DOM 顺序）——info 卡/装饰字都是
+                              position:absolute，图片不给个 position，怎么调 z-index
+                              都盖不到它们上面 */
+    z-index: 3;
+    display: block;
+    width: 344px;
+    height: 435px;
+    object-fit: cover;
+    border: 1px solid var(--brand);
+}
+/* "(me)" 装饰字：从图片左边缘往右 138px。
+   嵌入深度改成按视口高度分三段（这个仓库没有 git 历史，下面这组数值
+   是从本次会话自己的编辑记录里原样找回来的，不是猜的）：
+     ≥900px：恢复成最初的默认值 top:396px（咬入图片底部 39px）——
+       上一次"嵌入到1/3"那次改动误把这个更深的嵌入量（63px）用到了
+       所有高度，把 900px+ 本该保留的原始默认状态也覆盖掉了，这次先
+       找回来
+     ≤800px：嵌入深度是"(me)"自身高度的 1/3——沿用上次已经定好的
+       测量口径（真实字形墨迹高度，canvas measureText 的
+       actualBoundingBox = 140.4px，不是 line-height 撑出来的 120px
+       盒子高度，理由见上次改动：如果按 120px 算 1/3=40px，跟原始的
+       39px 基本没差，不成立），1/3×140.4≈46.8px，
+       top = 435(图高) - 46.8 = 388.2px
+     860-900px：top 在 388.2px 和 396px 之间线性过渡（区间从原来的
+       800-900px 收窄到 860-900px，嵌入过渡提前完成）
+     ≤860px：固定在 388.2px（最大嵌入），800px、720px 等更矮的高度
+       不再继续变化——clamp 的下限本身就是这个效果，不用额外加断点
+   top 还是这个画布坐标系里的普通像素值，父级 .about-me-visual 的
+   transform:scale 会像现在其他内容一样自动把它一起缩放，不用额外
+   处理响应式联动 */
+.about-me-deco {
+    position: absolute;
+    z-index: 1;
+    left: 138px;
+    top: clamp(388.2px, calc(388.2px + (396 - 388.2) * (100vh - 860px) / (900 - 860)), 396px);
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 150px;
+    line-height: 0.8;
+    letter-spacing: 0;
+    color: var(--bg-grey);
+    white-space: nowrap;
+    pointer-events: none;
+}
+/* 黄色卡片背景：Figma 导出的精确样式，transform:rotate(180deg) 直接
+   照抄，不做"化简"——border-radius:0 50px 在 180° 旋转前后视觉上都是
+   右上/左下圆角，旋转这一步理论上不改变外观，但既然是 Figma 精确导出
+   就原样保留，不去猜它是不是多余的 */
+.info-card-bg {
+    box-sizing: border-box;
+    position: absolute;
+    z-index: 1;
+    left: 314px;   /* 344(图宽) - 30，往左咬进图片 30px */
+    top: 125px;
+    width: 410px;
+    height: 178px;
+    background: var(--bg-reading);
+    border: 0.5px solid var(--stroke);
+    border-radius: 0 50px;
+    transform: rotate(180deg);
+}
+/* info 卡文字内容故意没有做成 .info-card-bg 的子元素——如果嵌进那个
+   rotate(180deg) 的背景层里，文字会跟着背景一起被转成倒着的，得再加一层
+   反向 rotate 才能摆正，不如让内容层跟背景层是两个平级的绝对定位层，
+   坐标完全一致、只是内容层不旋转，省掉一次反向纠正 */
+.info-card-content {
+    box-sizing: border-box;
+    position: absolute;
+    z-index: 1;
+    left: 314px;
+    top: 125px;
+    width: 410px;
+    height: 178px;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.info-card-inner {
+    width: 331px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+.info-card-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;   /* 右侧手写内容"垂直底部对齐" */
+    padding-bottom: 4px;
+    border-bottom: 0.5px solid var(--stroke);
+}
+.info-card-label {
+    font-family: var(--font-avenir);
+    font-weight: 400;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+.info-card-value {
+    font-family: "HanziPen TC", "HanziPen SC", "Yuanti TC", cursive;
+    font-weight: 600;
+    font-size: 16px;
+    letter-spacing: 0.96px;   /* Figma 给的是 6%，按 16px 字号换算成具体值：16×0.06 */
+    text-align: right;
+    color: var(--text-primary);
+}
+
+/* 卡片2/3/4 统一模板：标题→正文→图片纵向堆叠，左对齐，跟卡片1同一个
+   排布逻辑。三张卡片各自的容器宽度按"正文宽度 vs 图片宽度取较宽的
+   那个"来定（跟卡片1的算法一样：.about-card--me 靠 width:fit-content
+   自动取宽度最大的那个流式子元素）——图片缩小 15%、正文宽度改窄之后，
+   这几个卡片宽度也要跟着重新算一遍，不是维持原来跟 555/520/573 图片
+   尺寸时算出来的值：
+     卡片2：max(447, 555×0.85=471.75) = 471.75
+     卡片3：max(460, 520×0.85=442)    = 460（例外，见下面 .about-card--3 单独的注释——
+            460 是为了让正文自然折成 3 行反推出来的，不是 max(正文,图片) 这个通用公式的结果，
+            这次图片仍然是 442，比正文 460 窄，卡片宽度改成跟着正文走）
+     卡片4：max(426, 573×0.85=487.05) = 487.05
+   （卡片2/4还是"图片始终比正文宽，卡片宽度跟着图片走"这个通用规律，只有卡片3是例外） */
+.about-card--2, .about-card--3, .about-card--4 {
+    display: flex;
+    flex-direction: column;
+    flex: 0 0 auto;
+    width: fit-content;   /* 覆盖 .about-card 的 min(70vw,900px) */
+    /* 标题距离各自卡片顶部 80px——加在卡片自己的 padding-top 上，不是
+       标题的 margin-top。标题本身还是 margin-top:0（贴着这段 padding
+       走），标题→正文→图片依然是同一个连续的内容块整体往下移了 80px，
+       不是标题自己被单独摘出来吊得更高。卡片1（.about-card--me）不用
+       这条规则——它是 opening/hero，继续用自己那套（只有卡片级
+       margin-top:16px 的整体微调） */
+    padding-top: 80px;
+    /* 720-860px 视口高度：三张卡片整体上移，最大 20px，跟卡片1
+       "600-650px 下移30px"是同一个思路、不同区间，互不冲突（720-860
+       和 600-650 没有重叠）。排查过这三张卡片（含它们各自的
+       .about-card--N 规则）都没有既有 transform——图片缩放用的是
+       width/height clamp，不是 transform:scale（跟卡片1的
+       .about-me-visual 不一样，卡片1那边才需要 transform，这三张
+       不需要），不存在合并冲突 */
+    /* 原公式 20px*(100vh-720px)/(860-720) 是长度乘长度在前（20px×一个
+       长度），无论除数有没有单位，乘法都先算，长度乘长度不是合法的
+       calc() 结果（CSS 没有"面积"类型），跟前面 about-track-scale-wrap
+       那次是同一类 bug，这次换了个写法又踩了一遍——加括号强制先算
+       长度/长度那部分（变成无量纲比例），再拿这个比例去乘 20px（无量纲
+       ×长度=长度，合法），最外层再跟 -20px 相加 */
+    transform: translateY(clamp(-20px, calc(-20px + 20px * ((100vh - 720px) / (860px - 720px))), 0px));
+}
+.about-card--2 { width: 471.75px; margin-right: min(30vw, 502.2px); }   /* 卡片2→3 的间距，30vw，>1674px 封顶 */
+/* 卡片3宽度从 442px（max(418,442) 算出来的旧值）改成 460px——正文
+   加宽到 460px 让它自然折行落在 3 行（原来 418px 宽会折成 4 行），
+   卡片宽度得跟着正文一起涨，不然文字会溢出卡片自己的盒子，把
+   margin-right:480px 这段到卡片4的间距实际吃掉一截（卡片宽度是靠
+   fit-content 反推出来又写死的固定值，不是真的动态 fit-content，
+   不会自动跟着子元素涨) */
+.about-card--3 { width: 460px; margin-right: min(30vw, 502.2px); }       /* 卡片3→4 的间距，30vw，>1674px 封顶 */
+.about-card--4 { width: 487.05px; margin-right: 0; }        /* 卡片4是最后一张，右侧收尾留白改成 track 自己的 padding-right（30vw，见上面 .about-track），不再由这张卡片自己的 margin 承担，这里清零避免叠加 */
+
+/* 卡片3标题这一句比其他三张长，会折成两行且断得不好看
+   ("...doesn't stop at the" / "screen")。直接用 white-space:nowrap
+   强制单行——宽度改成 auto，让标题按单行文字的实际长度撑开，不再按
+   卡片宽度走，标题会比卡片右边缘探出去一截，跟旁边内容没有遮挡关系，
+   是有意为之 */
+.about-card--3 .about-card-title {
+    width: auto;
+    white-space: nowrap;
+}
+
+/* 正文→图片间距（margin-bottom）改成视口高度 860-960px 区间响应式，
+   各卡片目标值不变（各自比原值少 16px），下限提前到 860px 就到位，
+   860px 以下固定在各自最小值，不再继续往更低的高度过渡 */
+.about-card--2 .about-card-body { width: 447px; margin-bottom: clamp(36px, calc(36px + (52 - 36) * (100vh - 860px) / (960 - 860)), 52px); }
+/* 418→460px：排查过 418px 宽下这段正文会自然折成 4 行，不用 <br> 硬编
+   断行（字号以后可能还会响应式变化，硬编断行在缩放时容易在 <br> 之外
+   意外二次折行，参考 opening-scene-text 和 arrow-wrap 那两次的教训）。
+   实测宽度 445px 是 4 行→3 行的临界点，450-600px 区间都稳定 3 行，
+   700px+ 会再折成 2 行——460px 落在 3 行这段稳定区间中段，离两侧
+   临界值都留了余量，不是卡在边界上的数字 */
+.about-card--3 .about-card-body { width: 460px; margin-bottom: clamp(16px, calc(16px + (32 - 16) * (100vh - 860px) / (960 - 860)), 32px); }
+.about-card--4 .about-card-body { width: 426px; margin-bottom: clamp(24px, calc(24px + (67 - 24) * (100vh - 860px) / (960 - 860)), 67px); }
+
+.about-section-photo {
+    display: block;
+}
+/* 图片整体缩小到 85%（这是跟设计稿之间已经定下来的固定比例，不随
+   视口变化）——宽高都按同一个比例缩，保持原图宽高比不变。
+   下面再叠加一层视口高度驱动的响应式收缩（960px 高度=这个 85% 基准
+   值不变，720px 高度第二轮改成再收到 6/7×0.9≈77.14% 基准值——比第一轮
+   的 6/7≈85.71% 又多缩 10%，中间线性过渡）——两次缩放互不冲突，这次
+   改的是 720px 这一档下限的具体数值本身，不是往上再叠一层新的
+   transform。这三张都是普通流内图片，没有像卡片1 .about-me-visual
+   那样绝对定位的装饰子元素依赖精确坐标，直接改 width/height 不会有
+   错位问题，不需要 transform:scale */
+/* 650-720px 再叠一段（跟卡片1同一个减法技巧）：720px floor 减去一个
+   只在 650-720px 才生效的欠款，650px 时精确减到排查阶段量出来的
+   实际渲染尺寸 ×0.9 的目标值，不改动原来 720-960 那段 */
+.about-card--2 .about-section-photo {
+    width: calc(
+        clamp(363.9px, calc(363.9px + (471.75 - 363.9) * (100vh - 720px) / (960 - 720)), 471.75px)
+        - clamp(0px, calc(36.4px * (720px - 100vh) / 70px), 36.4px)
+    );
+    height: calc(
+        clamp(288.5px, calc(288.5px + (374 - 288.5) * (100vh - 720px) / (960 - 720)), 374px)
+        - clamp(0px, calc(28.85px * (720px - 100vh) / 70px), 28.85px)
+    );
+}
+.about-card--3 .about-section-photo {
+    width: calc(
+        clamp(341px, calc(341px + (442 - 341) * (100vh - 720px) / (960 - 720)), 442px)
+        - clamp(0px, calc(34.1px * (720px - 100vh) / 70px), 34.1px)
+    );
+    height: calc(
+        clamp(354.7px, calc(354.7px + (459.85 - 354.7) * (100vh - 720px) / (960 - 720)), 459.85px)
+        - clamp(0px, calc(35.48px * (720px - 100vh) / 70px), 35.48px)
+    );
+}
+.about-card--4 .about-section-photo {
+    width: calc(
+        clamp(375.7px, calc(375.7px + (487.05 - 375.7) * (100vh - 720px) / (960 - 720)), 487.05px)
+        - clamp(0px, calc(37.58px * (720px - 100vh) / 70px), 37.58px)
+    );
+    height: calc(
+        clamp(332.9px, calc(332.9px + (431.57 - 332.9) * (100vh - 720px) / (960 - 720)), 431.57px)
+        - clamp(0px, calc(33.3px * (720px - 100vh) / 70px), 33.3px)
+    );
+}
+
+.about-card-body {
+    width: 402px;
+    font-family: var(--font-avenir);
+    font-weight: 350;   /* Book，对应 Text-large */
+    font-size: 16px;
+    line-height: 1.5;   /* 150% */
+    color: var(--text-secondary);
+}
+
+/* 进度条 + 像素小人：1440px 定宽（画布基准，不是响应式撑满），高度
+   6px、四角圆到头正好是胶囊形（半径 = 高度一半）。
+   margin-top 要的效果是"进度条顶部距离(me)装饰字底部 89px"，但(me)是
+   绝对定位、脱离文档流，不会撑开 .about-card--me 自身的排版高度——
+   margin-top 实际量的起点是 .about-track 的流式底边（也就是图片的
+   底边），不是(me)文字探出去之后的真实视觉底边。用 Playwright 量出来
+   (me)文字的视觉底边比图片底边还要再往下探 81px（150px 字号、80%
+   行高 = 120px 行高，文字顶部咬进图片底部 39px，120-39=81），所以这里
+   写 89+81=170px，实测验证过图片底边→进度条顶部的可见间距正好是 89px */
+.about-progress-bar {
+    display: flex;
+    justify-content: center;
+    /* 视口高度 <768px 宽度断点会把这个元素整个 display:none（见文件
+       底部移动端媒体查询），这条 clamp 在那种情况下自然不生效，是
+       预期行为，不用特殊处理——两套断点各管各的轴，互不覆盖 */
+    /* 四段分段线性：≥960px 固定90，900-960px 从90降到35（原来那段，
+       没动），800-900px 新增一段从35再降到0，<800px 固定0。
+       单个 clamp() 只能表达一段线性过渡，两段不同斜率的过渡拼在一起
+       得用"两个各自独立 clamp 住的斜坡相加"这个技巧：
+       - seg1 负责 0-35 这 35px，只在 800-900px 区间爬升，900px 以上
+         封顶在 35 不再变、800px 以下归零
+       - seg2 负责 35-90 这 55px（原来那条 900-960 的逻辑，只是把基准
+         从"35起步"挪成"0起步"，加下来正好还原成 35-90），只在
+         900-960px 区间爬升，960px 以上封顶 55、900px 以下归零
+       两段相加：<800px→0+0=0，800-900px→(0~35)+0，900px→35+0=35，
+       900-960px→35+(0~55)，960px→35+55=90，>960px→35+55=90（各自
+       封顶，不会继续往上涨），四段都对，且完全没有改动原来 900-960
+       那部分的计算逻辑，只是加法形式重新表达了一遍 */
+    margin-top: calc(
+        clamp(0px, calc(35px * (100vh - 800px) / 100px), 35px) +
+        clamp(0px, calc(55px * (100vh - 900px) / 60px), 55px)
+    );
+}
+/* 宽度从写死的 1440px 改成 width:100%+max-width:1440px（P0 那次
+   .sandbox-grid-wrapper 用过的同一个响应式写法）——原来 flex-shrink:0
+   锁死不让收缩，注释自己写的前提"容器刚好够宽"只在视口≥1488px左右
+   才成立，比这更窄的时候（比如1024/1200px）.content-section--about
+   自己都已经收窄到 1440 以下了，这条 track 还铁了心不缩，会直接
+   横向溢出视口（实测 1024px 下溢出 208px），不是巧合能撑住的 */
+.progress-bar-track {
+    position: relative;
+    width: 100%;
+    max-width: 1440px;
+    height: 6px;
+    border-radius: 3px;
+    border: 1px solid var(--stroke);
+    cursor: pointer;
+}
+/* <1600px：跟 .project-card/.project-row 同一套 40px 左右边距需求，
+   同一个 1599px 分界。.progress-bar-track 是靠 .about-progress-bar
+   的 justify-content:center 居中的，不是像卡片那样直接贴边+自己的
+   margin，所以不能照抄 margin-left/right:16px（那样会在居中的基础上
+   把总宽度撑大 32px，超出容器）——改成让宽度本身减 32px（左右各让出
+   16px），居中之后两侧各自然空出 16px，配合 <main> 自己的 24px
+   padding，凑成跟卡片一致的 flat 40px。
+   必须写在上面 .progress-bar-track 基础规则后面——两条都是单类选择器
+   specificity 相同，写在前面会被基础规则的 width:100% 盖掉（.project-row
+   那次的 max-width:none 踩过同样的坑，这次是同一个文件位置问题，
+   没有再放前面那个大的 1599px 断点块里，直接跟在这条规则后面写） */
+@media (max-width: 1599px) {
+    .progress-bar-track {
+        width: calc(100% - 32px);
+    }
+}
+.progress-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--brand);
+    border-radius: 3px;
+    pointer-events: none;   /* 点击/拖拽都是靠 .progress-bar-track / .pixel-character 自己接，这层不用截获事件 */
+}
+.pixel-character {
+    position: absolute;
+    top: 50%;
+    left: 0%;
+    transform: translate(-50%, -50%);
+    width: 33px;
+    height: 65px;
+    padding: 0;
+    border: none;
+    appearance: none;   /* <button> 默认带系统原生外观（灰底/边框），光设 background-image 盖不住它 */
+    background-color: transparent;
+    background-image: url('assets/images/about/pixel me.svg');
+    background-repeat: no-repeat;
+    background-size: contain;
+    cursor: grab;
+    touch-action: none;   /* 拖拽手势自己处理，别让浏览器当成原生滚动/缩放手势抢走 */
+}
+.pixel-character:active { cursor: grabbing; }
+
+/* 移动端整个取消这套 scroll-jacking：4 张卡片正常纵向堆叠，about.js
+   里同一个断点也不会挂 wheel/拖拽监听器，两边要对上 */
+@media (max-width: 768px) {
+    .about-scroll-wrapper { height: auto; }
+    .about-sticky {
+        position: static;
+        height: auto;
+        overflow: visible;
+        display: block;
+    }
+    .about-track {
+        flex-direction: column;
+        gap: 48px;
+        padding: 40px 24px;
+        transform: none !important;
+    }
+    .about-card { width: 100%; }
+    /* 卡片1·me 的照片+装饰字+info卡这个画布（.about-me-visual）在移动端
+       先保持跟桌面端一样的固定尺寸/绝对坐标——这几个坐标都是按 344×435
+       这个具体尺寸换算出来的，缩放容器宽度会让装饰字/info卡的位置全部
+       错开，移动端要做成 fluid 的话需要重新换算一套坐标，不是这次的
+       范围，先照抄桌面端效果 */
+    .about-progress-bar { display: none; }
+}

@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="content.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Monda:wght@500;600&family=Montserrat:wght@500&display=swap" rel="stylesheet">
+<title>Gia Wang — Work</title>
+</head>
+<body>
+
+<main>
+
+    <!-- Banner 现在是横跨全部区块共用的一个组件，不再是 #work 自己的
+         hero——挪到所有 section 外面、sticky 相对整个滚动容器，滚过
+         Work/Sandbox/About 全程贴顶不消失。位置/背景色/渐变字样式完全
+         没变，只是里面这行大字（.banner-section-title）会随着 content.js
+         的 scroll-spy 逻辑 crossfade 切换文案，逻辑见 content.js 里的
+         bannerTitleObserver。 -->
+    <div class="work-banner">
+        <div class="work-banner-inner">
+            <!-- 独立访问 content.html 时是真的跳转回首页；被 overlay.js fetch
+                 进浮层显示时，overlay.js 会把这个链接的点击行为改写成"关掉
+                 浮层"而不是导航（不然浮层里点它会整页跳走，架构就破了） -->
+            <a class="banner-home" href="index.html">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                <span>HOME</span>
+            </a>
+            <h1 class="section-title banner-section-title">Selected Work</h1>
+        </div>
+    </div>
+
+    <section id="work" class="content-section content-section--work">
+
+        <article class="project-card">
+            <div class="project-meta">
+                <div class="display-number">001</div>
+                <span class="status-tag status-tag--green status-tag--auto">LIVE SINCE 2023</span>
+                <span class="connector-line" aria-hidden="true"></span>
+            </div>
+
+            <div class="project-body">
+                <div class="project-thumbs">
+                    <img class="project-thumb-img" src="assets/images/drayeasy/homepage prototype.gif" alt="DrayEasy homepage — freight quote search">
+                    <img class="project-thumb-img" src="assets/images/drayeasy/request rate prototype.gif" alt="DrayEasy rate request table">
+                </div>
+                <h2 class="project-title">Simplifying Rate Search for Freight Forwarders</h2>
+                <p class="project-tags">B2B SaaS   /  Complex Workflows  /  Design Systems</p>
+                <div class="project-actions">
+                    <a class="btn-primary" href="#" data-case-study-ready="false">
+                        <span>View Case Study</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                    </a>
+                </div>
+            </div>
+        </article>
+
+        <!-- 项目2 · MobileConductor —— 跟项目1 左右镜像：编号+连接线在右，
+             图片+文字在左。以后奇数/偶数项目交替镜像 -->
+        <article class="project-card project-card--mirror">
+            <div class="project-body">
+                <div class="project-thumbs">
+                    <img class="project-thumb-img" src="assets/images/mc/dashboard prototype.gif" alt="MobileConductor dashboard">
+                    <img class="project-thumb-img" src="assets/images/mc/mobile prototype3.gif" alt="MobileConductor driver mobile app">
+                </div>
+                <h2 class="project-title">Rethinking Delivery Workflows for Drivers</h2>
+                <p class="project-tags">Handheld Interface  /  Configurable Workflows  /  Design System  /  B2B SaaS</p>
+                <div class="project-actions">
+                    <a class="btn-primary" href="#" data-case-study-ready="false">
+                        <span>View Case Study</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                    </a>
+                </div>
+            </div>
+
+            <div class="project-meta">
+                <div class="meta-row">
+                    <!-- 折线箭头：Figma 导出的实心填充路径（fill，不是描边拼线）。
+                         在"002+标签"这组文字的左边、水平并排，顶部对齐"002"
+                         数字的顶部——不是跟标签对齐，也不是垂直堆叠在下面 -->
+                    <div class="arrow-wrap" aria-hidden="true">
+                        <svg width="228" height="388" viewBox="0 0 228 388" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M32.707 386.535L32 387.242L0 355.242L0.707031 354.535L32.707 386.535ZM227.707 354.535H0.707031L0 353.828L33 320.828L33.707 321.535L1.70703 353.535H226.707V161.535H227.707V354.535ZM227.552 161L226.707 161.535L124.707 0.535156L125.552 0L227.552 161Z" fill="#9EA5AC"/>
+                        </svg>
+                    </div>
+                    <div class="meta-text">
+                        <div class="display-number">002</div>
+                        <span class="status-tag status-tag--yellow status-tag--auto">HANDED OFF · 2026</span>
+                    </div>
+                </div>
+            </div>
+        </article>
+
+        <!-- 项目3 · SmartDevil —— 暂时隐藏（hidden，不是删除）：Selected Work
+             只想先露出 001/002 两个项目。整段代码原样保留在注释里，以后要么
+             恢复展示，要么挪去做"more work"列表的一条，都不用重新写。
+             恢复时把下面这段注释去掉、article 恢复出来就行，CSS 里
+             #work .project-card:last-child 那条margin清零规则是按DOM位置
+             算的，不是写死认 003，恢复后会自动重新指向 003，不用跟着改
+
+        <article class="project-card">
+            <div class="project-meta">
+                <div class="display-number">003</div>
+                <span class="status-tag status-tag--yellow">DELIVERED</span>
+                <span class="connector-line connector-line--003" aria-hidden="true"></span>
+
+                <div class="smartdevil-text">
+                    <h2 class="project-title">User Research for a Screen Protector Kit</h2>
+                    <p class="project-tags">User Research / Usability Testing / Survey Analysis</p>
+                    <div class="smartdevil-summary">
+                        <p>Led contextual inquiry and <span class="text-brand">usability testing</span> (12 participants) benchmarked against competitor products, and a <span class="text-brand">concept-testing survey</span> (382 respondents) using T2B scoring and regression analysis. Findings informed product iterations that shipped alongside the product's growth to 600K+ units sold.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="project-body">
+                <div class="smartdevil-visual">
+                    <svg class="smartdevil-frame" width="549" height="407" viewBox="0 0 549 407" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <path d="M549 146H377V95.5361H323V289H454V316H453.5V289.5H323V407H0V53H323V95.0361H377V0H549V146ZM1 406H322V54H1V406ZM378 145H548V1H378V145Z" fill="#0072CB"/>
+                    </svg>
+                    <img class="smartdevil-product" src="assets/images/smartdevil/screen protector kit.png" alt="SmartDevil screen protector kit">
+                    <img class="smartdevil-logo" src="assets/images/smartdevil/logo.png" alt="SmartDevil logo">
+                    <div class="smartdevil-metric">
+                        <span>600K+<br><small>(Sold on Taobao)</small></span>
+                    </div>
+                </div>
+            </div>
+        </article>
+        -->
+    </section>
+
+    <!-- Work→Sandbox 板块级过渡：跟 Work 内部项目之间的 .project-divider
+         用同一个类，间距也还是普通的 200px，不单独放大 -->
+    <div class="project-divider" aria-hidden="true"></div>
+
+    <section id="sandbox" class="content-section content-section--sandbox">
+
+        <!-- Sandbox 项目1 · Beyond Fingers —— 第一个用"左右两个独立容器"
+             结构写的项目：.project-visual（框+图片）和 .project-info（编号+
+             标题+按钮）显式拆成两个平级容器，而不是之前 DrayEasy/MobileConductor/
+             SmartDevil 那种一个 grid 里挤两列。这样以后做响应式，直接对
+             .project-visual/.project-info 这两个容器分别改布局（比如竖屏下
+             改成上下堆叠）就行，不用去拆 grid-template-columns。
+             如果这次调整顺利，后续会把前面三个项目也统一改成这个模式 -->
+        <article class="project-card--beyond-fingers">
+            <div class="project-row">
+                <div class="project-visual">
+                    <!-- 图1/图2 + 外框 + 转角装饰线的画布，跟 Figma 容器 1:1（600×833）。
+                         外框这条 union path 是 Figma 导出的精确路径，直接用，不拆解成
+                         CSS border——path 里已经包含最外层 1px 描边框和中间那道 L 形
+                         装饰线，另外又单独给了两条灰色转角线（.beyond-fingers-corner-line），
+                         两者位置基本重合，按 Figma 原样都保留 -->
+                    <div class="beyond-fingers-frame">
+                        <svg class="beyond-fingers-outline" width="600" height="833" viewBox="0 0 600 833" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <path d="M600 833H0V0H600V833ZM1 832H599V1H1V832ZM115.5 571.5H238V572H115V365H115.5V571.5Z" fill="#0072CB"/>
+                        </svg>
+                        <!-- 图1 现在直接用裁好的成品图（456×308），不用再靠
+                             object-position 在 CSS 里裁一遍 -->
+                        <img class="beyond-fingers-img1" src="assets/images/beyond fingers/Beyond fingers prototype crop.gif" alt="Beyond Fingers touchless MIDI controller prototype">
+                        <img class="beyond-fingers-img2" src="assets/images/beyond fingers/installation thumbnail.png" alt="Beyond Fingers installation thumbnail">
+                        <div class="beyond-fingers-corner-line beyond-fingers-corner-line--h" aria-hidden="true"></div>
+                        <div class="beyond-fingers-corner-line beyond-fingers-corner-line--v" aria-hidden="true"></div>
+                    </div>
+                </div>
+
+                <div class="project-info">
+                    <!-- "001" 用绝对定位钉在"外框顶部往下 145px"这个基准上，
+                         不再是紧贴 .project-info 顶部的第一个流式元素——下面
+                         的标签/连接线跟着挪到对应位置补偿，见 content.css -->
+                    <div class="display-number number-001">001</div>
+                    <span class="status-tag status-tag--yellow status-tag--auto">PHYSICAL PROTOTYPE</span>
+                    <!-- 复用 003 SmartDevil 那条连接线，但整体跟着"001"一起下移 145px -->
+                    <span class="connector-line connector-line--003 connector-line--beyond-fingers" aria-hidden="true"></span>
+
+                    <h2 class="project-title beyond-fingers-title">Exploring Touchless Interaction for<br>Musicians with Mobility Constraints</h2>
+                    <p class="project-tags">Music Tech  /  Accessibility  /  AI-assisted Voice Control</p>
+                    <div class="project-actions">
+                        <a class="btn-primary" href="#" data-case-study-ready="false">
+                            <span>View Case Study</span>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </article>
+
+        <!-- Sandbox 项目2 · 四个小项目的 2×2 卡片墙：整个容器按 1440×1000
+             的画布居中（.sandbox-grid-wrapper），网格本身 1200px 宽，
+             横向 gap 24px / 纵向 gap 32px 是按两行卡片各自的实际高度反推
+             出来的，不是随便挑的整数。卡片本身就是可点击的 <a>（先占位
+             href="#"，之后有 demo/repo 链接再补），hover 时鼠标旁跟着一个
+             "View Project" 胶囊，逻辑在 content.js 的 initMiniGridHoverCapsules() -->
+        <div class="sandbox-grid-wrapper">
+            <div class="sandbox-mini-grid">
+                <a class="mini-project-card" href="https://gia-ovis.github.io/Vito/" target="_blank" rel="noopener noreferrer" data-hover-label="Visit Site">
+                    <img src="assets/images/vito/thumbnail.png" alt="Interactive music player built with Web Audio API and p5.js">
+                    <h3 class="title-3">Interactive Music Player Built with Web Audio API and p5.js</h3>
+                    <p class="tags-line">Creative Coding &middot; Interaction Design &middot; HTML/CSS/JavaScript</p>
+                </a>
+                <a class="mini-project-card" href="https://www.instagram.com/reel/DYD_u09NNw3/?utm_source=ig_web_copy_link&igsi=MzRlODBiNWFlZA==" target="_blank" rel="noopener noreferrer" data-hover-label="Watch Reel">
+                    <img src="assets/images/winter record/thumbnail.gif" alt="winter record player prototype built with Max/MSP and Unity">
+                    <h3 class="title-3">Audio-Visual Record Player with Max/MSP + Unity</h3>
+                    <p class="tags-line">Creative Coding &middot; Sound Design &middot; Audio-Visual Interaction</p>
+                </a>
+                <a class="mini-project-card" href="https://www.figma.com/design/BswklxZkvRFC18VjmNs09Z/Yajia--Gia--Wang--Copy-?node-id=653-1881&t=zza88kHSOWxKCuU7-1" target="_blank" rel="noopener noreferrer" data-hover-label="View Case Study">
+                    <img src="assets/images/cube/main screen prototype.gif" alt="Skin redesign for Lunacy Audio's CUBE virtual instrument">
+                    <h3 class="title-3">A Custom UI Skin Concept for Lunacy Audio’s CUBE</h3>
+                    <p class="tags-line">Visual Design &middot; VST UI &middot; Figma</p>
+                </a>
+                <a class="mini-project-card" href="https://docs.google.com/spreadsheets/d/13vmyqoT7Q6PUmWebFtESFjtcGL_eF5Epsf1vRLwVhtI/edit?usp=sharing" target="_blank" rel="noopener noreferrer" data-hover-label="View Research Notes">
+                    <img src="assets/images/vst research/thumbnail.png" alt="UX research into VST synth interfaces usability">
+                    <h3 class="title-3">Exploring Usability Patterns in VST Synth Interfaces</h3>
+                    <p class="tags-line">UX Research &middot; VST Interfaces &middot; Ongoing</p>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Sandbox→About 板块级过渡：跟其他项目间分隔条用同一个类，但底部
+         间距单独覆盖成 20px（其他分隔条维持 200px 不变，所以加了个
+         修饰类，不是改 .project-divider 的公共规则）。位置在
+         .about-scroll-wrapper 外面、before 它，跟 About 内部那套横向
+         scroll-jacking 逻辑没有任何关联 -->
+    <div class="project-divider divider--sandbox-to-about" aria-hidden="true"></div>
+
+    <!-- About：横向 scroll-jacking 画廊，不是普通纵向滚动的区块。
+         .about-scroll-wrapper 撑出 250vh 的纵向滚动缓冲区，里面
+         .about-sticky 用 position:sticky 钉在视口内；纵向滚过这段
+         缓冲区时，about.js 拦截 wheel 事件、把纵向滚动量转成
+         .about-track 的横向位移（4 张卡片），滚到头/滚到底才放行
+         默认的纵向滚动，让页面正常离开这个区块。
+         移动端（见 content.css 里的 media query）整个取消这套劫持，
+         改成 4 张卡片正常纵向堆叠——about.js 里也会检查同一个断点，
+         不在移动端挂 wheel 监听器。
+         照片/正文文案目前都是占位——真实文案要照着截图抄，真实照片
+         文件也还没有，先用占位块把机制跑通 -->
+    <section id="about" class="content-section content-section--about about-section">
+        <div class="about-scroll-wrapper">
+            <div class="about-sticky">
+                <!-- about-track-scale-wrap：650-720px 区间给整个画廊再叠一层
+                     响应式收缩，用的原因见 content.css 里这个类的注释——
+                     about.js 用行内 style.transform 控制 .about-track 的
+                     横向滚动位移，不能再在 .about-track 自己身上叠 CSS
+                     transform（会被行内样式整个覆盖掉），所以缩放挪到这一层
+                     新包的父级上，.about-track 本身保持原样，横向滚动逻辑
+                     完全不受影响 -->
+                <div class="about-track-scale-wrap">
+                <div class="about-track">
+
+                    <!-- 卡片1·me：标题+正文一组（左对齐）在上面，照片+"(me)"
+                         装饰字+手写风格 info 卡在下面。装饰字/info 卡都是
+                         绝对定位、按"相对图片左上角"的坐标摆的，坐标细节见
+                         content.css -->
+                    <article class="about-card about-card--me">
+                        <div class="about-me-text">
+                            <h2 class="about-card-title">A little more about me</h2>
+                            <p class="about-card-body">I studied psychology before finding my way into HCI and design, with a curiosity about how people perceive and interact with the world.</p>
+                        </div>
+
+                        <!-- about-me-visual-wrap 决定实际布局占位大小（响应式收缩，
+                             跟视口高度 720-960px 联动），.about-me-visual 自己保持
+                             原始 344×435 不变、靠 transform:scale 整体缩放——里面
+                             "(me)" 文字和 info 卡片都是按固定像素坐标相对这个画布
+                             绝对定位的，只改外层尺寸不会让它们跟着缩，会错位（同
+                             Beyond Fingers 那次 .project-visual/.beyond-fingers-frame
+                             的处理方式） -->
+                        <div class="about-me-visual-wrap">
+                        <div class="about-me-visual">
+                            <img class="about-me-photo photo-shadow" src="assets/images/about/selfie.png" width="344" height="435" alt="Gia Wang mirror selfie">
+                            <span class="about-me-deco" aria-hidden="true">(me)</span>
+
+                            <!-- 黄色卡片背景（transform:rotate(180deg)，Figma 精确样式）
+                                 和文字内容是两个平级的绝对定位层，不是父子——文字如果
+                                 嵌进旋转的背景层里会跟着一起倒过来，见 content.css 里
+                                 .info-card-content 的注释 -->
+                            <div class="info-card-bg" aria-hidden="true"></div>
+                            <div class="info-card-content">
+                                <div class="info-card-inner">
+                                    <div class="info-card-item">
+                                        <span class="info-card-label">NAME:</span>
+                                        <span class="info-card-value">Yajia (Gia) Wang</span>
+                                    </div>
+                                    <div class="info-card-item">
+                                        <span class="info-card-label">BASED IN:</span>
+                                        <span class="info-card-value">Maryland, USA</span>
+                                    </div>
+                                    <div class="info-card-item">
+                                        <span class="info-card-label">BACKGROUND:</span>
+                                        <span class="info-card-value">HCI @ UMD<br>Applied Psychology @ GZHU</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        </div>
+                    </article>
+
+                    <!-- 卡片2/3/4：标题→正文→图片，跟卡片1同一个纵向堆叠、左对齐
+                         的模式（正文底部到图片顶部这个间距，就是卡片1"文字组
+                         底部到图片顶部71px"那套逻辑，只是每张卡片自己的数值不同）。
+                         三张图都是已经合成好的成品图（多张拍立得的拼贴/倾斜效果
+                         已经在图片本身里做好了），直接当一整张图片摆，不需要在
+                         代码里再单独控制每张小照片的角度/位置。
+                         正文里的高亮短语复用 003 SmartDevil 那段摘要已经用过的
+                         .text-brand（Brand 蓝），没有另外新建一个 .link 类——
+                         同一个视觉效果没必要维护两份。链接目的地还没定，先用
+                         href="#" 占位，跟"View Case Study"那些按钮一个惯例 -->
+                    <article class="about-card about-card--2">
+                        <h2 class="about-card-title">I have a soft spot for game design</h2>
+                        <p class="about-card-body">As a Game Design TA, I got to think about interaction through mechanics, narrative, player behavior, and sound. I even gave a talk on one of my favorite rabbit holes: interactive music.</p>
+                        <img class="about-section-photo" src="assets/images/about/game design lecture.png" width="471.75" height="374" alt="Giving a talk on interactive music in game design">
+                    </article>
+
+                    <article class="about-card about-card--3">
+                        <h2 class="about-card-title">I’m drawn to interactions I can touch</h2>
+                        <p class="about-card-body">I like making things I can actually touch and play with. That’s taken me from breadboards and sensors to physical prototypes, and eventually built my own synth, Granular Stone.</a></p>
+                        <img class="about-section-photo" src="assets/images/about/hardwares.png" width="442" height="459.85" alt="Synth and interactive music hardware experiments">
+                    </article>
+
+                    <article class="about-card about-card--4">
+                        <h2 class="about-card-title">Making music gives me ideas for design</h2>
+                        <p class="about-card-body">I usually end up getting curious about the tools, too. I start wondering what else they could do, and how different ways of working with them might lead to different sounds, ideas, or unexpected results.</p>
+                        <img class="about-section-photo" src="assets/images/about/music.png" width="487.05" height="431.57" alt="Music production, guitars, and outdoor synth playing">
+                    </article>
+
+                </div>
+                </div>
+
+                <!-- 进度条+像素小人：滚动同步，也能点击/拖拽跳转，逻辑见 about.js。
+                     像素小人是专门给这里做的 sprite（pixel me.svg），用
+                     background-image 铺在按钮上，不用内嵌 <img> -->
+                <div class="about-progress-bar">
+                    <div class="progress-bar-track">
+                        <div class="progress-fill"></div>
+                        <button class="pixel-character" type="button" aria-label="Drag to scrub through About"></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<script src="grid.js"></script>
+<script src="content.js"></script>
+<script src="about.js"></script>
+
+</body>
+</html>
