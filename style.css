@@ -786,7 +786,7 @@ body.intro .avatar-flip {
     /* Caveat 是加的后备字体，不是替换——HanziPen TC(mac 本地系统字体)
        依然是首选，只有加载不出来才会降级用 Caveat。字重 bold(700)
        Caveat 正好有对应的 700 档，不用改字重数值 */
-    font-family: "HanziPen TC", "HanziPen SC", "Yuanti TC", "Caveat", cursive;
+    font-family: "HanziPen TC", "HanziPen SC", "Yuanti TC", "Caveat-Adjusted", cursive;
     font-weight: bold;
     font-size: clamp(24px, 2.15vw, 36px);   /* 36px 是 1672 基准下的值 */
     color: #6b95bd;

@@ -77,8 +77,24 @@
     // 页面里 .signature（"Gia Wang" 签名）已经在用这一套字体栈了，本身
     // 就含拉丁字母字形，画 Work/Sandbox/About 这几个英文单词不用额外
     // 引入字体文件，也不用等 document.fonts.ready（系统字体，本地直接
-    // 可用，见下面 init() 里去掉了原来等 Caveat 下载的逻辑）
-    const WORD_FONT = '700 %Fpx "HanziPen TC", "HanziPen SC", "Yuanti TC", cursive';
+    // 可用，见下面 init() 里去掉了原来等 Caveat 下载的逻辑）。
+    //
+    // 排查结论：这几个字之前排查"所有用到 HanziPen TC 的位置"、给
+    // font-family 统一加 Caveat-Adjusted 后备字体那次任务，漏掉了这里——
+    // 这里不是 CSS 的 font-family 声明，是 canvas 2D 的 ctx.font 字符串
+    // （画在雾气擦除画布上，不是普通 DOM 文字），当时全局搜 CSS 属性
+    // 搜不到这一处，是这次任务专门排查出来补上的。
+    // Caveat-Adjusted 换算成 canvas 字体串就是加进这个字符串的字体列表
+    // 里，跟 CSS font-family 是同一套字体匹配规则，没有额外的写法。
+    // 不需要额外等 Caveat-Adjusted 下载完再开始画：drawWordHole() 这个
+    // 画字函数不是只在页面加载时跑一次，注释里写了"每次回雾都重画一遍"，
+    // 靠 refogTick 定时器每隔 FOG_CONFIG.refogInterval（默认 90ms）就
+    // 会重新执行一次——就算本地没有 HanziPen TC(fallback 到网络字体
+    // Caveat-Adjusted)的设备上，第一帧画出来时字体文件可能还没下载完、
+    // 暂时用了最后的 cursive 兜底，下一次 90ms 后的回雾循环也会用当时
+    // 已经下载好的 Caveat-Adjusted 重新画一遍、自动纠正过来，不需要
+    // 额外写一段等 document.fonts.ready 的逻辑去处理这个边界情况
+    const WORD_FONT = '700 %Fpx "HanziPen TC", "HanziPen SC", "Yuanti TC", "Caveat-Adjusted", cursive';
 
     // hover 效果切换开关：'underline' 是划一条线（drawHoverLine），
     // 'thin-fog' 是文字周围局部起雾变薄（stepHoverThinFog）。先切到

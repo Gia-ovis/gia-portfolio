@@ -166,6 +166,14 @@
             pixelChar.addEventListener('pointerdown', onPointerDown);
             window.addEventListener('pointermove', onPointerMove);
             window.addEventListener('pointerup', onPointerUp);
+            // pointercancel：浏览器/系统中途判定"这个指针不会再产生事件了"
+            // 时触发的（比如拖拽过程中 Cmd+Tab 切走窗口、触控板手势被系统
+            // 重新解释），不一定会伴随 pointerup。onPointerUp 只处理了
+            // pointerup 这一种收尾方式，isDragging 会永久卡在 true，之后
+            // 整个页面任何一次 mousemove 都会被当成"正在拖进度条"处理，
+            // 表现出来就是滚轮/触控板/拖拽全部失灵——复用同一个 onPointerUp
+            // （逻辑就是 isDragging=false，两种收尾方式要做的事完全一样）
+            window.addEventListener('pointercancel', onPointerUp);
         }
 
         // 容器尺寸变化（窗口 resize、浮层开关）要重新算 maxTranslate，不然
@@ -182,6 +190,7 @@
             if (pixelChar) pixelChar.removeEventListener('pointerdown', onPointerDown);
             window.removeEventListener('pointermove', onPointerMove);
             window.removeEventListener('pointerup', onPointerUp);
+            window.removeEventListener('pointercancel', onPointerUp);
             window.removeEventListener('resize', onResize);
         };
     }

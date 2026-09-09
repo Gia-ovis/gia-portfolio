@@ -23,6 +23,39 @@
     --font-display: "Montserrat", "Avenir Next", sans-serif;
 }
 
+/* Caveat-Adjusted：给 Caveat(HanziPen TC 的后备字体)单独做尺寸补偿的
+   "别名"字体，不改共用的 font-size 数值——同一个 font-size 下 Caveat
+   实测比 HanziPen TC 视觉上明显偏小，直接改 font-size 会连 HanziPen TC
+   也一起放大，这里用 size-adjust 只放大"Caveat 这一路"。
+
+   排查结论：任务原文给的示例写的是 `src: local('Caveat')`，只写
+   local() 没有 url() 兜底——实测发现这样写在几乎所有真实用户的设备上
+   都会失效。local() 只匹配"系统里已经安装的、名字叫 Caveat 的字体"，
+   Caveat 是通过下面这条 <link> 从 Google Fonts 下载的网络字体，不是
+   本地安装的系统字体，两者是完全不同的两件事——绝大多数访客的电脑上
+   根本没有本地安装的 Caveat，local('Caveat') 会直接匹配失败，导致
+   'Caveat-Adjusted' 这个别名整体失效，直接跳过去用最后的兜底
+   cursive，size-adjust 完全不会生效。
+   改成直接引用 Google Fonts 实际下发的字体文件 url()——用 curl 抓了一遍
+   https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700
+   这条链接实际返回的内容，确认 Caveat 在 Google Fonts 上是可变字体
+   (variable font)：400/500/600/700 四个字重请求到的是同一个 latin
+   子集 woff2 文件(Wnz6HAc5bAfYB2Q7ZjYYiAzcPA.woff2)，字重差异由字体
+   文件内部的可变轴表现，不是四个不同文件——所以这里只需要一条
+   @font-face，用 font-weight:400 700 声明整个区间即可覆盖项目里实际
+   用到的四个字重(400/500/600/700)，不用重复写四份。
+   src 列表里 local('Caveat') 还是留着放在最前面(万一真有访客本地装了
+   同名字体，优先用本地的，省一次网络请求)，url() 作为紧接着的真正兜底，
+   不是像原方案那样只有 local() 一条路 */
+@font-face {
+    font-family: 'Caveat-Adjusted';
+    src: local('Caveat'),
+         url('https://fonts.gstatic.com/s/caveat/v23/Wnz6HAc5bAfYB2Q7ZjYYiAzcPA.woff2') format('woff2');
+    font-weight: 400 700;
+    font-display: swap;
+    size-adjust: 115%;   /* 115% 是先给的起点，具体数值待视觉对比后确认，见任务报告里的候选截图 */
+}
+
 body {
     font-family: "Hiragino Sans GB", "Hiragino Sans GB W3", "PingFang SC", "Helvetica Neue", sans-serif;
     font-weight: 300;
@@ -33,7 +66,25 @@ body {
 /* ============================================================
    区块 + 占位卡片
    ============================================================ */
-main { padding: 0 24px; }
+/* container-type:inline-size 建立一个以 <main> 自身实际渲染宽度为基准
+   的容器查询上下文，给下面 .project-divider 用 cqw(不是 vw)——排查
+   "About section 底部出现异常横向滚动条"这个 bug 时确认的：
+   .project-divider 之前用 width:100vw + 负 margin 做"贴边撑满"，这个
+   技巧假设自己所在的容器跟视口一样宽，在独立页面里成立，但这个
+   divider 会被 overlay.js clone 进 #overlayBody(浮层面板左右各挖掉
+   40px，同一个视口宽度下面板实际可用宽度比 vw 小 80px)，100vw 算出来
+   的宽度比面板实际能装下的宽 80px，直接顶穿面板、撑出
+   document.documentElement.scrollWidth，这就是那条异常横向滚动条的
+   来源——横向滚动条本身又会跟 About 内部的横向 scroll-jacking(wheel
+   事件)抢事件/抢滚动，表现出来就是"About 横向交互变迟钝"。
+   这跟 .content-section--sandbox 之前那次"用 cqw 而不是 vw"是同一类
+   问题(见那条规则旁边的注释)，只是这次没有一起改到——.project-divider
+   不是任何一个 section 的子元素(是夹在 section 之间的兄弟节点)，没法
+   直接用 .content-section--sandbox 自己建的那个容器，所以在更上层的
+   <main> 上单独建一个：<main> 在独立页面里的渲染宽度等于视口宽度，在
+   overlay 面板里等于面板实际可用宽度(#overlayBody 内容区)，cqw 两种
+   场景下都跟着量出来的真实宽度走，不会再假设"容器=视口" */
+main { padding: 0 24px; container-type: inline-size; }
 
 .content-section {
     max-width: 960px;
@@ -266,9 +317,28 @@ main { padding: 0 24px; }
    容器），具体线条逻辑见 grid.js。
    ============================================================ */
 .project-divider {
-    width: 100vw;
-    margin-left: calc(50% - 50vw);
-    margin-right: calc(50% - 50vw);
+    /* width/margin-left/margin-right 从 vw 换成 cqw——原因见上面
+       main 规则旁边的注释。cqw 是相对 <main> 这个容器查询上下文的
+       实际渲染宽度算的，不是死认视口，在 overlay 面板里也能精确贴合
+       面板自己的可用宽度，不会再多出 80px 撑出横向滚动条。
+
+       排查结论：直接照抄 100vw→100cqw 这一步换完之后实测发现还有个
+       没考虑到的细节——container-type:inline-size 建立的容器查询上下
+       文，cqw 是按 <main> 的 content-box(不含 main 自己的左右 24px
+       padding)算的，不是 border-box。<main> 自己没设宽度，border-box
+       本来就精确撑满它所在的滚动容器(独立页面里是 body，浮层里是
+       #overlayBody)，是"真正可用的最大宽度"；content-box 则因为减掉
+       了 padding，天生比这个可用宽度窄 48px(左右各 24)。直接
+       100cqw/50cqw 会让分隔线在两种场景下都各自少延伸 24px，没有真的
+       撑到 <main> 实际能到达的边缘——分辨率不会溢出了，但比这次任务
+       之前"full-bleed，撑到视口边缘"这条原始设计意图窄了一圈，是这次
+       顺带发现、需要一并修正的偏差，不只是把 vw 换成 cqw 这么简单。
+       补偿方式：宽度额外加回 48px(2×24)，margin 额外再往外推 24px，
+       让分隔线精确撑满 <main> 的 border-box(等于它所在滚动容器的
+       整个可用宽度)，而不是停在 content-box 边缘 */
+    width: calc(100cqw + 48px);
+    margin-left: calc(50% - 50cqw - 24px);
+    margin-right: calc(50% - 50cqw - 24px);
     height: 72px;
     /* 基准值改回字面数字 200px→100px（不是排查出来的实际值 220px）。
        区间从 1024-1672px 改成 1200-1672px，1200px 以下固定 100px
@@ -620,7 +690,7 @@ main { padding: 0 24px; }
 .project-thumb-img {
     flex: 1 1 0;
     min-width: 0;   /* flex item 默认 min-width:auto，对有明确尺寸的 img 会按它的（未缩过的）尺寸兜底，flex-shrink 实际上不生效——这条才是真正让它能缩小的关键，光有 flex-shrink:1 没用 */
-    width: auto;
+    width: 100%;   /* 不能写 auto——Safari/WebKit 在"flex item + aspect-ratio"这个组合下会用图片未缩放的原始像素尺寸来定最终宽度，导致完全不跟着 flex 收缩（Chrome 没有这个问题）。显式写 100% 让宽度直接取 flex 计算出来的盒子宽度，height:auto 再靠 aspect-ratio 从这个已经正确的宽度反推，绕开这个 bug */
     height: auto;
     max-width: 496px;
     aspect-ratio: 496 / 352;
@@ -654,7 +724,7 @@ main { padding: 0 24px; }
 .project-card--mirror .project-thumbs img:nth-child(1) {
     flex: 2.7365 1 0;
     min-width: 0;   /* 同上 .project-thumb-img 那条注释——flex item 默认 min-width:auto 会挡住 flex-shrink */
-    width: auto;
+    width: 100%;   /* 不能写 auto，同上 .project-thumb-img 的注释——Safari 下 width:auto + aspect-ratio 会卡在图片原始像素尺寸不跟着 flex 收缩 */
     height: auto;
     max-width: 534.45px;
     aspect-ratio: 534.45 / 401.1;
@@ -662,7 +732,7 @@ main { padding: 0 24px; }
 .project-card--mirror .project-thumbs img:nth-child(2) {
     flex: 1 1 0;
     min-width: 0;
-    width: auto;
+    width: 100%;
     height: auto;
     max-width: 195.3px;
     aspect-ratio: 195.3 / 401.1;
@@ -1708,7 +1778,7 @@ main { padding: 0 24px; }
     /* Caveat 是加的后备字体，不是替换——HanziPen TC 依然是首选，只有
        加载不出来才会降级用 Caveat。字重 600 Caveat 正好有对应档位，
        不用改字重数值 */
-    font-family: "HanziPen TC", "HanziPen SC", "Yuanti TC", "Caveat", cursive;
+    font-family: "HanziPen TC", "HanziPen SC", "Yuanti TC", "Caveat-Adjusted", cursive;
     font-weight: 600;
     font-size: 16px;
     letter-spacing: 0.96px;   /* Figma 给的是 6%，按 16px 字号换算成具体值：16×0.06 */

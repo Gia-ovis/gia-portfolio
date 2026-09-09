@@ -80,7 +80,7 @@ main { padding: 0; }
     /* Caveat 是加的后备字体，不是替换——HanziPen TC 依然是首选，只有
        加载不出来才会降级用 Caveat。没写 font-weight，走默认 400，
        Caveat 正好有对应档位 */
-    font-family: "HanziPen TC", "HanziPen SC", "Yuanti TC", "Caveat", cursive;
+    font-family: "HanziPen TC", "HanziPen SC", "Yuanti TC", "Caveat-Adjusted", cursive;
     font-size: 36px;
     color: var(--brand);
     opacity: 0.8;
@@ -147,7 +147,12 @@ main { padding: 0; }
     display: flex;
     flex-direction: row;
     align-items: center;
-    padding: 20px 48px;
+    /* padding 原来是 20px 48px(上下 20/左右 48)，排查过没有响应式变化
+       ——全文件只有这一条 .mobile-nav 规则，没有 @media 覆盖，也没有
+       clamp()/vw，是纯字面值。这次只改底部：20px→30px(+10px)，上/左/
+       右三个方向不动，拆成 4 个方向分开写，不再用 20px 48px 这种
+       "上下同值"的简写(改完上下已经不相等了，简写写不出来) */
+    padding: 20px 48px 30px;
     column-gap: 0;
     transition: column-gap 350ms ease-out;
     position: fixed;
@@ -656,14 +661,20 @@ main { padding: 0; }
     width: 100%;   /* 402px 写死改成 100%，铺满视口宽度 */
     height: 23px;
 }
-/* svg 标签自己写了 width="402" height="23" 属性，不处理的话它会按
-   402px 的固定宽度渲染，跟外层容器的 100% 流式宽度对不上——CSS 这两条
-   会盖过 HTML 属性，viewBox="0 0 402 23" 还在，内部坐标会跟着新的
-   渲染宽高整体拉伸铺满。注意这是"拉伸"不是"重新排布格子密度"：容器
-   变宽时格子会被拉宽变形，不会像桌面端 grid.js 那样保持格子本身尺寸
-   、只增减列数——这次任务没有要求做那套 JS 动态重绘，先按最简单的
-   CSS 拉伸处理，如果视觉上不能接受格子被拉变形，需要另外确认要不要
-   照 grid.js 的思路做 */
+/* svg 标签本身已经没有写死 width/height 属性，下面这两条 CSS 只是把
+   svg 这个外层盒子撑到跟容器一样的 100%×100%——实测发现光这样不够：
+   svg 内部 viewBox="0 0 402 23" 定义的坐标系统，默认 preserveAspectRatio
+   是 xMidYMid meet，会保持 402:23 的原始长宽比整体缩放再居中，跟外层
+   盒子的实际比例（比如 500:23）对不上时，两边会留出实测到的空白
+   （用 headless Chrome 量过，line 元素渲染宽度精确停在 402px，左右各
+   空出约 49px，没有跟着 500px 的外层盒子拉满）。真正让内部坐标系统跟着
+   外层盒子非等比拉伸铺满的，是 html 里 <svg> 标签上加的
+   preserveAspectRatio="none"——加了这条之后横竖两个方向才会分别按外层
+   盒子实际宽高独立缩放，不再统一保比例。这是"拉伸"不是"重新排布格子
+   密度"：容器变宽时格子会被拉宽变形，不会像桌面端 grid.js 那样保持
+   格子本身尺寸、只增减列数——这次任务没有要求做那套 JS 动态重绘，先按
+   最简单的 CSS+SVG 属性拉伸处理，如果视觉上不能接受格子被拉变形，需要
+   另外确认要不要照 grid.js 的思路做 */
 .mobile-project-divider svg {
     display: block;
     width: 100%;
@@ -1569,7 +1580,7 @@ main { padding: 0; }
     margin: 0;
     /* Caveat 是加的后备字体，不是替换——HanziPen TC 依然是首选，只有
        加载不出来才会降级用 Caveat。字重 400 Caveat 正好有对应档位 */
-    font-family: "HanziPen TC", "HanziPen SC", "Yuanti TC", "Caveat", cursive;
+    font-family: "HanziPen TC", "HanziPen SC", "Yuanti TC", "Caveat-Adjusted", cursive;
     font-weight: 400;
     font-size: 12px;
     line-height: 17px;
@@ -1815,7 +1826,7 @@ main { padding: 0; }
     /* Caveat 是加的后备字体，不是替换——HanziPen TC 依然是首选，只有
        加载不出来才会降级用 Caveat。没写 font-weight，走默认 400，
        Caveat 正好有对应档位 */
-    font-family: "HanziPen TC", "HanziPen SC", "Yuanti TC", "Caveat", cursive;
+    font-family: "HanziPen TC", "HanziPen SC", "Yuanti TC", "Caveat-Adjusted", cursive;
     font-size: 36px;
     line-height: 50px;
     color: var(--brand);
