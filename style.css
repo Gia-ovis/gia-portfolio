@@ -783,7 +783,10 @@ body.intro .avatar-flip {
        系数相应从 -2/135=-1.48148% 换成 -10/135=-7.40741%（135 是
        1672 基准下头像直径的 px 值，见 --avatar-width 那条注释） */
     margin-top: calc(var(--avatar-width-vw) * -0.0740741);
-    font-family: "HanziPen TC", "HanziPen SC", "Yuanti TC", cursive;
+    /* Caveat 是加的后备字体，不是替换——HanziPen TC(mac 本地系统字体)
+       依然是首选，只有加载不出来才会降级用 Caveat。字重 bold(700)
+       Caveat 正好有对应的 700 档，不用改字重数值 */
+    font-family: "HanziPen TC", "HanziPen SC", "Yuanti TC", "Caveat", cursive;
     font-weight: bold;
     font-size: clamp(24px, 2.15vw, 36px);   /* 36px 是 1672 基准下的值 */
     color: #6b95bd;

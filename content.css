@@ -1705,7 +1705,10 @@ main { padding: 0 24px; }
     color: var(--text-secondary);
 }
 .info-card-value {
-    font-family: "HanziPen TC", "HanziPen SC", "Yuanti TC", cursive;
+    /* Caveat 是加的后备字体，不是替换——HanziPen TC 依然是首选，只有
+       加载不出来才会降级用 Caveat。字重 600 Caveat 正好有对应档位，
+       不用改字重数值 */
+    font-family: "HanziPen TC", "HanziPen SC", "Yuanti TC", "Caveat", cursive;
     font-weight: 600;
     font-size: 16px;
     letter-spacing: 0.96px;   /* Figma 给的是 6%，按 16px 字号换算成具体值：16×0.06 */

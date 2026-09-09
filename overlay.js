@@ -41,48 +41,28 @@
         return mainPromise;
     }
 
-    // 等一个容器里所有 <img> 都加载完（已经 complete 的直接跳过，不用
-    // 白等一次 load 事件）。error 也当完成处理——图裂了不该让居中逻辑
-    // 卡死在那儿一直不执行
-    function waitForImages(container) {
-        const imgs = Array.from(container.querySelectorAll('img'));
-        return Promise.all(imgs.map(img => {
-            if (img.complete) return Promise.resolve();
-            return new Promise(resolve => {
-                img.addEventListener('load', resolve, { once: true });
-                img.addEventListener('error', resolve, { once: true });
-            });
-        }));
-    }
-
-    // 让 001 项目卡片在 #overlayBody 的可视区域里垂直居中——用
-    // getBoundingClientRect 而不是 offsetTop：offsetTop 是相对最近的
-    // "已定位祖先"算的，#work 到 #overlayBody 之间一串祖先（<main>／
-    // .content-section 等）都没有设 position，offsetParent 链条可能
-    // 一路找到真正的 document.body 而不是这个浮层自己的 #overlayBody，
-    // 量出来的数会不对；getBoundingClientRect 量的是视口坐标，用两个
-    // 矩形的差再加上 body 当前的 scrollTop，换算出"卡片顶部相对
-    // #overlayBody 内容顶部"的距离，跟祖先链条是否 positioned 无关，
-    // 更可靠
-    async function centerFirstWorkCard(mainClone, body) {
-        const firstCard = mainClone.querySelector('#work .project-card');
-        if (!firstCard) {
-            body.scrollTop = 0;
-            return;
-        }
-        await waitForImages(firstCard);
-        const cardRect = firstCard.getBoundingClientRect();
+    // 排查结论：之前"让 001 卡片在 #overlayBody 里垂直居中"那套逻辑
+    // (centerFirstWorkCard() + 它的辅助函数 waitForImages())已经在更早
+    // 的任务里撤销过、不再调用了，但函数定义本身一直没删，只是注释掉了
+    // 调用点——这次任务要求把这类残留彻底清理干净，两个函数整个删除，
+    // 不再保留"以后想恢复就换回这行"这种半吊子状态。
+    // Sandbox/About 这次改成各自明确的定位规则(见下面 openOverlay 里
+    // 的分支)，不需要"动态量卡片高度"这套机制，替换成更简单的
+    // scrollToWithOffset：把目标元素的顶部滚动到距离 #overlayBody 可视
+    // 区域顶部指定的 offset 处。测量方式还是用 getBoundingClientRect
+    // 而不是 offsetTop——原因跟被删掉的 centerFirstWorkCard() 一样：
+    // offsetTop 是相对最近的"已定位祖先"算的，content.html 里从目标
+    // 元素到 #overlayBody 之间一串祖先(<main>／.content-section 等)都
+    // 没有设 position，offsetParent 链条可能一路找到真正的
+    // document.body 而不是这个浮层自己的 #overlayBody，量出来的数会
+    // 不对；getBoundingClientRect 量的是视口坐标，用两个矩形的差再加上
+    // body 当前的 scrollTop，换算出"目标顶部相对 #overlayBody 内容顶部"
+    // 的距离，跟祖先链条是否 positioned 无关，更可靠
+    function scrollToWithOffset(target, body, offset) {
+        const targetRect = target.getBoundingClientRect();
         const bodyRect = body.getBoundingClientRect();
-        const cardTop = (cardRect.top - bodyRect.top) + body.scrollTop;
-        const cardHeight = firstCard.offsetHeight;
-        const viewportHeight = body.clientHeight;
-        // 卡片比可视区域还高的极端情况：居中公式会算出负值，交给下面
-        // Math.max(0, ...) 兜底，退化成贴顶显示卡片顶部（不会把卡片
-        // 顶部滚过头看不见），这种情况不额外处理——"自然居中，除非
-        // 效果不理想不加下限"已经覆盖了这个分支
-        const targetScrollTop = cardTop - (viewportHeight - cardHeight) / 2;
-        const maxScrollTop = body.scrollHeight - body.clientHeight;
-        body.scrollTop = Math.max(0, Math.min(targetScrollTop, maxScrollTop));
+        const targetTop = (targetRect.top - bodyRect.top) + body.scrollTop;
+        body.scrollTop = Math.max(0, targetTop - offset);
     }
 
     let isOpen = false;
@@ -140,33 +120,49 @@
         panel.classList.add('is-visible');
         isOpen = true;
 
-        // About 定位到 .about-scroll-wrapper 而不是 #about 本身——
-        // #about 自己还有一段 padding-top（目前还没有分隔格子接管这段
-        // 间距，所以没清零），如果 scrollIntoView 对准的是 #about，
-        // 停下来的位置会落在 wrapper 前面一截，.about-sticky 这时候
-        // 还没真正"钉住"（position:sticky 需要再往下滚一段才会贴顶），
-        // 用户会先看到一帧没有钉住、内容还在正常文档流里的过渡画面——
-        // 视觉上就是"标题偏低、上面多一截空白"。直接对准 wrapper 的
-        // 顶部，滚动落点正好是 sticky 开始生效的那一刻，一步到位显示
-        // 钉住之后的最终布局，不会有过渡帧
-        const target = sectionId === 'about'
-            ? mainClone.querySelector('#about .about-scroll-wrapper')
-            : mainClone.querySelector('#' + sectionId);
+        // 三个入口各自明确的定位规则，不再共用同一套 scrollIntoView 贴顶
+        // 逻辑(之前 Sandbox/About 走的是同一个 target.scrollIntoView({
+        // block:'start'})，视觉效果不理想，这次分开处理)：
         if (sectionId === 'work') {
-            // 撤销过居中滚动这个方向——001 卡片上方的留白（.work-banner
-            // 的 margin-bottom）现在已经是响应式的了（跟窗口高度联动，
-            // 720-987px 区间自动收缩，见 content.css），配合直接贴顶
-            // 打开，视觉上不会再出现"顶部留白过多"，不需要额外居中滚动
-            // 来补偿。centerFirstWorkCard() 函数本身还留着（见下面
-            // 定义），没删，只是这里不调用了——以后想恢复直接把下面这行
-            // 换回 `await centerFirstWorkCard(mainClone, body);` 即可。
-            // 之前给这个函数加的"等图片 load 完再测量"逻辑只服务于居中
-            // 计算，现在不需要居中了，这段 await 会让浮层打开到滚动定位/
-            // scroll-spy 初始化之间多等图片加载（实测约 40ms），贴顶
-            // 不需要量任何东西，去掉这段等待，恢复成同步直接跳转，更快
+            // Work：贴顶，不做任何居中/偏移计算。001 卡片上方的留白
+            // (.work-banner 的 margin-bottom)已经是响应式的了(跟窗口
+            // 高度联动，720-987px 区间自动收缩，见 content.css)，配合
+            // 直接贴顶打开，视觉上不会出现"顶部留白过多"，不需要额外
+            // 计算来补偿——这条逻辑这次没有改动，跟之前撤销居中滚动那次
+            // 任务定下来的效果一致
             body.scrollTop = 0;
-        } else if (target) {
-            target.scrollIntoView({ behavior: 'auto', block: 'start' });
+        } else if (sectionId === 'sandbox') {
+            // Sandbox：定位到 001 项目(Beyond Fingers)这张卡片容器的
+            // 顶部，缓冲量是"banner 底部→001 卡片顶部"这段间距的 3/5
+            // (0.6 倍，之前是一半/0.5，这次任务改的)，不是写死的 30px。
+            // 排查结论：之前以为这段间距归 .project-divider(分隔线)管，
+            // 后来确认过是搞错了对象——content.html 从头到尾只有一条
+            // banner：.work-banner，里面的大字("Selected Work"/
+            // "Sandbox"/"About")靠 content.js 的 scroll-spy 用
+            // crossfade 切换文字内容，不是三条各自独立的 banner 元素，
+            // 所以 Sandbox 用的就是同一个 .work-banner class、同一套
+            // 响应式 margin-bottom(clamp(35px,...,130px)，视口高度
+            // 720-987px 区间联动，见 content.css:158)。
+            // 这个 margin-bottom 是响应式的，写死"多少 px"只在某个特定
+            // 视口高度下凑巧对，视口一变就会跟设计意图脱节，所以在这里
+            // (每次打开浮层时)用 getComputedStyle 现读现算，不缓存成
+            // 常量——保证任意视口高度下这个缓冲量都精确等于当前 banner
+            // margin-bottom 的 0.6 倍
+            const sandbox001 = mainClone.querySelector('.project-card--beyond-fingers');
+            if (sandbox001) {
+                const banner = mainClone.querySelector('.work-banner');
+                const bannerMarginBottom = banner ? parseFloat(getComputedStyle(banner).marginBottom) : 0;
+                scrollToWithOffset(sandbox001, body, bannerMarginBottom * 0.6);
+            } else {
+                body.scrollTop = 0;
+            }
+        } else if (sectionId === 'about') {
+            // About：不是定位到 About 内容开始的位置，是直接跳到整个
+            // 可滚动区域的最末端——这跟之前"对准 .about-scroll-wrapper
+            // 顶部、让 .about-sticky 一步到位显示钉住后布局"是两个不同
+            // 的目标，这次任务明确要求改成停在最底部，以这次的要求为准，
+            // 旧的那套 wrapper 定位逻辑不再需要
+            body.scrollTop = body.scrollHeight - body.clientHeight;
         } else {
             body.scrollTop = 0;
         }

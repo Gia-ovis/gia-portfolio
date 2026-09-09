@@ -3,6 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 移动端跳转：必须放在 viewport meta 之后、任何 <link>/资源加载之前——
+         放在 viewport meta 之前的话，部分移动浏览器还没应用
+         width=device-width，innerWidth 读到的是默认宽视口（通常
+         980px 左右），会把窄屏设备误判成桌面端。放在这里（同步、阻塞
+         解析）能在浏览器开始拉取 style.css/content.css/Google Fonts
+         之前就跳走，不会有"先看到桌面版窗户闪一下再跳转"的问题。
+         用 location.replace 而不是 location.href，是为了不写入 history——
+         避免移动端点后退会退回到刚被跳过的桌面版这种怪现象 -->
+    <script>
+        if (window.innerWidth < 1024) {
+            location.replace('mobile.html');
+        }
+    </script>
     <link rel="stylesheet" href="style.css">
     <!-- content.css 是 Work/Play/About 浮层内容（banner、001 编号、项目卡片
          这套排版）的样式，overlay.js 会把 content.html 里对应的 section
@@ -10,7 +23,14 @@
     <link rel="stylesheet" href="content.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Monda:wght@500;600&family=Montserrat:wght@500&display=swap" rel="stylesheet">
+    <!-- Caveat 是给 HanziPen TC(手写体，签名/info card 值/... 用) 加的
+         后备字体——HanziPen TC 是 macOS 本地系统字体，非 mac 设备加载
+         不出来，Caveat 是 Google Fonts，跨平台保底能显示手写体效果。
+         合并进已有的这一条 <link> 里（跟 Monda/Montserrat 用同一次
+         请求），不单独再起一条 preconnect+link，避免重复请求；字重
+         400/500/600/700 全部要——HanziPen TC 原来在各处用到的字重
+         (400/600/700)都在这个范围内，500 是多请求的一档，不影响 -->
+    <link href="https://fonts.googleapis.com/css2?family=Monda:wght@500;600&family=Montserrat:wght@500&family=Caveat:wght@400;500;600;700&display=swap" rel="stylesheet">
     <title>responsive scale test</title>
 </head>
 <body class="intro">
