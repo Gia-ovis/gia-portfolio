@@ -261,3 +261,45 @@
         });
     });
 })();
+
+
+/* ============================================================
+   Email 图标：点击复制邮箱地址到剪贴板，跟桌面端 script.js 里同一段
+   逻辑完全一致，不是重新设计的另一套——排查"移动端点击没反应"时确认
+   桌面端的设计意图本来就是"复制到剪贴板 + toast 提示"，不是真的唤起
+   邮件客户端（href 上的 mailto: 只是兜底，见桌面端注释）；移动端首屏
+   的邮箱图标（.hero-social-link，id="emailLink"）之前只有裸的
+   <a href="mailto:...">，mobile.js 里完全没有对应的 click 逻辑——点了
+   没反应是因为压根没有 JS 拦截默认跳转，落到浏览器原生 mailto:
+   处理上，桌面浏览器（或者没配置 Mail app 的手机）上这一步本身就是
+   静默无反应，这正是桌面端最初要改成剪贴板方案的原因，移动端漏了
+   同一步。
+   navigator.clipboard 需要"安全上下文"（HTTPS 或 localhost/127.0.0.1
+   这类回环地址），后者浏览器规范本身就当作安全上下文处理，不需要真的
+   上 HTTPS——用 http://127.0.0.1 测本身不构成限制。即使真的因为权限被
+   拒绝，下面 catch 里的 window.prompt() 兜底也会弹出来，不会是"完全
+   没反应"这种静默失败——所以这次的根因是逻辑缺失，不是环境限制，直接
+   照抄桌面端实现即可，不用等部署到 HTTPS 才能验证 */
+(function () {
+    const emailLink = document.getElementById('emailLink');
+    if (!emailLink) return;
+
+    function showToast(message) {
+        const toast = document.createElement('div');
+        toast.className = 'copy-toast';
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        toast.addEventListener('animationend', () => toast.remove());
+    }
+
+    emailLink.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const email = emailLink.href.replace(/^mailto:/, '');
+        try {
+            await navigator.clipboard.writeText(email);
+            showToast('Email copied!');
+        } catch (err) {
+            window.prompt('Copy this email:', email);
+        }
+    });
+})();

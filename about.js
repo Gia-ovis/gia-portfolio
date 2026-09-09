@@ -1,9 +1,11 @@
 /* ============================================================
-   About 区块：横向 scroll-jacking 画廊。.about-scroll-wrapper 撑出
-   250vh 的纵向滚动缓冲区，.about-sticky 用 position:sticky 钉在视口内；
-   纵向滚过这段缓冲区、且 sticky 确实钉住了的时候，拦截 wheel 事件，把
-   纵向滚动量/触控板横向划动转成 .about-track 的横向位移（4 张卡片）。
-   scrollProgress 到 0 或 1 时不拦截，让页面正常纵向滚动离开/进入。
+   About 区块：横向 scroll-jacking 画廊。.about-scroll-wrapper 撑出一段
+   纵向滚动缓冲区（当前 300px，见 content.css 里 .about-scroll-wrapper
+   旁边的注释——不是 250vh，那是这段注释曾经的说法，已经过时），
+   .about-sticky 用 position:sticky 钉在视口内；纵向滚过这段缓冲区、且
+   sticky 确实钉住了的时候，拦截 wheel 事件，把纵向滚动量/触控板横向
+   划动转成 .about-track 的横向位移（4 张卡片）。scrollProgress 到 0 或
+   1 时不拦截，让页面正常纵向滚动离开/进入。
 
    包成 window.initAboutScrollJack(root) 返回 destroy()，是同一套原因：
    content.html 独立访问时页面加载自动跑一次；index.html 的浮层里
@@ -33,8 +35,9 @@
         return null;
     }
 
-    function initAboutScrollJack(root) {
+    function initAboutScrollJack(root, options) {
         root = root || document;
+        options = options || {};
 
         if (window.matchMedia(MOBILE_QUERY).matches) {
             return function destroy() {};
@@ -51,11 +54,22 @@
 
         const scrollParent = getScrollParent(sticky);
 
-        // 每次进入 About（点击进来打开浮层，或者独立页面刚加载）进度条
-        // 都从真正的 0 开始，不带任何初始偏移
+        // 默认每次进入 About（点击进来打开浮层，或者独立页面刚加载）进度条
+        // 都从真正的 0 开始，不带任何初始偏移。
+        // 排查结论（About 横向滚动完全失灵排查，场景B：直接点导航进入）：
+        // 之前 overlay.js 对 'about' 入口的处理是把 body.scrollTop 硬跳到
+        // 整个可滚动区域的最末端——这个位置在 .about-scroll-wrapper 的
+        // sticky 缓冲区之外（sticky 早就松开了），isPinned() 从一开始就是
+        // false，wheel 事件从来没被接管过，横向画廊等于没启动。现在
+        // overlay.js 改成把 scrollTop 精确定位到缓冲区正中间（真正钉住的
+        // 位置），同时通过这个 options.initialProgress 参数告诉这里"直接
+        // 从最后一张卡片开始"，视觉效果跟以前"停在最末尾"一致，但这次是
+        // 真的钉住、能响应 wheel 的末尾，不是滚过头之后的死状态
         const INITIAL_PROGRESS = 0;
 
-        let scrollProgress = INITIAL_PROGRESS;
+        let scrollProgress = typeof options.initialProgress === 'number'
+            ? Math.min(1, Math.max(0, options.initialProgress))
+            : INITIAL_PROGRESS;
         let maxTranslate = 0;
 
         // track.scrollWidth 不包含最后一张卡片的 trailing margin-right——

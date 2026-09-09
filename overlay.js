@@ -132,37 +132,101 @@
             // 任务定下来的效果一致
             body.scrollTop = 0;
         } else if (sectionId === 'sandbox') {
-            // Sandbox：定位到 001 项目(Beyond Fingers)这张卡片容器的
-            // 顶部，缓冲量是"banner 底部→001 卡片顶部"这段间距的 3/5
-            // (0.6 倍，之前是一半/0.5，这次任务改的)，不是写死的 30px。
-            // 排查结论：之前以为这段间距归 .project-divider(分隔线)管，
-            // 后来确认过是搞错了对象——content.html 从头到尾只有一条
-            // banner：.work-banner，里面的大字("Selected Work"/
-            // "Sandbox"/"About")靠 content.js 的 scroll-spy 用
-            // crossfade 切换文字内容，不是三条各自独立的 banner 元素，
-            // 所以 Sandbox 用的就是同一个 .work-banner class、同一套
-            // 响应式 margin-bottom(clamp(35px,...,130px)，视口高度
-            // 720-987px 区间联动，见 content.css:158)。
-            // 这个 margin-bottom 是响应式的，写死"多少 px"只在某个特定
-            // 视口高度下凑巧对，视口一变就会跟设计意图脱节，所以在这里
-            // (每次打开浮层时)用 getComputedStyle 现读现算，不缓存成
-            // 常量——保证任意视口高度下这个缓冲量都精确等于当前 banner
-            // margin-bottom 的 0.6 倍
+            // Sandbox：排查结论——之前"banner 底部→卡片顶部间距 = banner
+            // margin-bottom 的 0.6 倍"这套公式，实测两组不同视口高度的
+            // 数据后发现关系是反的：矮视口下卡片反而被 banner 压住一截，
+            // 高视口下卡片又跟 banner 之间空出一大截，不是同一个方向的
+            // 偏差，说明公式本身的参照对象就选错了——0.6 倍这个系数是
+            // 拍出来的，没有对应任何实际布局关系。
+            // 真正要的效果：卡片在"banner 底部→视口底部"这段可用空间里
+            // 居中——可用空间够大就是间距对称的居中；可用空间比卡片本身
+            // 还矮（卡片装不下）就允许卡片顶部/底部各自超出一样的量，是
+            // 居中公式在空间不够时的自然延伸，不是另外一套逻辑分支。
+            // 公式：卡片顶部相对 body 顶部的目标偏移
+            //   = bannerHeight + (availableSpace - cardHeight) / 2
+            //   availableSpace = bodyRect.height - bannerHeight
+            // availableSpace ≥ cardHeight 时上面这个偏移量 > bannerHeight，
+            // 卡片顶部让在 banner 下方，两端间距相等；availableSpace <
+            // cardHeight 时偏移量 < bannerHeight，卡片顶部主动往上探进
+            // banner 底下一截，同样的量会在卡片底部探出视口底部——两处
+            // 探出量数学上必然相等（用同一个居中公式代入即可推出），不用
+            // 分两条 if/else 单独处理超出的情况。
+            // bannerHeight 用的是 banner 自己的渲染高度（68px，纯 CSS
+            // 决定，不受视口高度影响），不是 margin-bottom（响应式
+            // clamp，之前那条公式的参照对象）——这次任务明确要"卡片贴着
+            // banner 实际画出来的下边缘对称"，用 margin-bottom 从起点上
+            // 就不对。全部现读现算，没有任何写死的绝对数字或系数
             const sandbox001 = mainClone.querySelector('.project-card--beyond-fingers');
-            if (sandbox001) {
-                const banner = mainClone.querySelector('.work-banner');
-                const bannerMarginBottom = banner ? parseFloat(getComputedStyle(banner).marginBottom) : 0;
-                scrollToWithOffset(sandbox001, body, bannerMarginBottom * 0.6);
+            const sandboxBanner = mainClone.querySelector('.work-banner');
+            if (sandbox001 && sandboxBanner) {
+                const positionSandbox = () => {
+                    const bannerHeight = sandboxBanner.getBoundingClientRect().height;
+                    const bodyRect = body.getBoundingClientRect();
+                    const availableSpace = bodyRect.height - bannerHeight;
+                    const cardHeight = sandbox001.getBoundingClientRect().height;
+                    const targetCardTop = bannerHeight + (availableSpace - cardHeight) / 2;
+                    scrollToWithOffset(sandbox001, body, targetCardTop);
+                };
+                positionSandbox();
+                // 跟 About 那次同样的排查结论——Work/Sandbox 里大量标题/
+                // 标签用自定义字体，打开浮层这一刻字体可能还没换好，字体
+                // 换好触发的重排会让上面这次测量的 bannerHeight/cardHeight
+                // 跟着漂移，落点跟着算错。等 document.fonts.ready 之后
+                // 用同一个公式重新定位一次，纠正可能的漂移
+                if (document.fonts && document.fonts.ready) {
+                    document.fonts.ready.then(() => {
+                        requestAnimationFrame(() => requestAnimationFrame(positionSandbox));
+                    });
+                }
             } else {
                 body.scrollTop = 0;
             }
         } else if (sectionId === 'about') {
-            // About：不是定位到 About 内容开始的位置，是直接跳到整个
-            // 可滚动区域的最末端——这跟之前"对准 .about-scroll-wrapper
-            // 顶部、让 .about-sticky 一步到位显示钉住后布局"是两个不同
-            // 的目标，这次任务明确要求改成停在最底部，以这次的要求为准，
-            // 旧的那套 wrapper 定位逻辑不再需要
-            body.scrollTop = body.scrollHeight - body.clientHeight;
+            // About：这次任务改成入场显示第一张卡片（initialProgress:0，
+            // 见下面），但纵向滚动位置这部分逻辑不能动——排查"About 横向
+            // 滚动完全失灵"时发现的根因是：之前直接跳 body.scrollTop 到
+            // 整个可滚动区域的最末端，落点在 .about-scroll-wrapper 的
+            // sticky 缓冲区之外（sticky 早就松开了），about.js 的
+            // isPinned() 从一开始就是 false，wheel 事件从来没被接管过，
+            // 等于横向画廊没启动过。这跟"画廊从第几张卡片开始"是两件
+            // 独立的事——不管 initialProgress 是 0 还是 1，只要 scrollTop
+            // 落在 sticky 缓冲区之外，isPinned() 照样是 false，照样完全
+            // 无法响应，所以精确定位到缓冲区正中间这部分必须保留
+            const aboutWrapper = mainClone.querySelector('.about-scroll-wrapper');
+            if (aboutWrapper) {
+                // 必须跟 content.css 里 .about-scroll-wrapper 的
+                // calc(100vh + 300px) 这个 300 对上——那是缓冲区总高度，
+                // 这里取正中间，两头都留出足够余量，不会因为测量误差
+                // 又落到窗口边缘外面
+                const BUFFER_PX = 300;
+                const positionAbout = () => scrollToWithOffset(aboutWrapper, body, -(BUFFER_PX / 2));
+                positionAbout();
+
+                // 排查结论（"直接导航进 About 画面不完整"排查）：用户在
+                // 真实 Safari 里实测到，点击进入的那一刻用
+                // getBoundingClientRect() 量出来的 wrapperTopAbs 跟几百
+                // 毫秒后（布局彻底稳定、Console 里重新量一遍）的真实值
+                // 能差出 300px 左右——不是这条定位公式本身算错了，是
+                // Work/Sandbox 里用到自定义字体（Montserrat/Caveat-
+                // Adjusted）的大量标题/标签文字，在这个时间点可能还没换
+                // 字完成，用的是尺寸不同的后备字体，字体换好之后引发的
+                // 重排会把 .about-scroll-wrapper 的位置顶下去一截——这次
+                // 排查中 Chrome 端复现不出这个漂移（字体大概率已经缓存
+                // 命中，换字几乎瞬间完成），只在 Safari 真机上量到过，
+                // 具体是不是100%字体这一个原因、还是也有其它因素叠加，
+                // 没有100%实锤，但 document.fonts.ready 是这类问题的标准
+                // 应对方式，等它 resolve、且再等两帧真正 paint 稳定后，
+                // 用同一个 wrapperTopAbs 公式重新定位一次，把可能的
+                // 漂移误差纠正回来。字体已经就绪的正常情况下 resolve
+                // 几乎是瞬间的，用户不会感知到"先落错位置再纠正"这个过程
+                if (document.fonts && document.fonts.ready) {
+                    document.fonts.ready.then(() => {
+                        requestAnimationFrame(() => requestAnimationFrame(positionAbout));
+                    });
+                }
+            } else {
+                body.scrollTop = body.scrollHeight - body.clientHeight;
+            }
         } else {
             body.scrollTop = 0;
         }
@@ -177,9 +241,15 @@
             ? window.initMiniGridHoverCapsules(document)
             : null;
         // About 的横向 scroll-jacking 同理——wheel/拖拽监听器也是克隆
-        // 不来的，得在注入完成后重新挂一遍
+        // 不来的，得在注入完成后重新挂一遍。sectionId==='about' 这个
+        // 入口上面已经把 scrollTop 精确定位到缓冲区中间（真正钉住的
+        // 位置，这是让画廊能响应输入的关键，跟 initialProgress 无关，
+        // 不能省掉）——initialProgress 本身这次改成 0，入场显示第一张
+        // 卡片；Work/Sandbox 入口同样走 0，跟 about.js 默认值一致
         const aboutTeardown = window.initAboutScrollJack
-            ? window.initAboutScrollJack(document)
+            ? window.initAboutScrollJack(document, {
+                initialProgress: 0,
+            })
             : null;
         // Coming Soon 弹窗的触发按钮也是克隆进来的，同样要重新绑一遍——
         // 弹窗本身（scrim/modal）是单例不会重复创建，见 content.js

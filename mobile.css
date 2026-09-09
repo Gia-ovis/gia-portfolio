@@ -147,12 +147,12 @@ main { padding: 0; }
     display: flex;
     flex-direction: row;
     align-items: center;
-    /* padding 原来是 20px 48px(上下 20/左右 48)，排查过没有响应式变化
-       ——全文件只有这一条 .mobile-nav 规则，没有 @media 覆盖，也没有
-       clamp()/vw，是纯字面值。这次只改底部：20px→30px(+10px)，上/左/
-       右三个方向不动，拆成 4 个方向分开写，不再用 20px 48px 这种
-       "上下同值"的简写(改完上下已经不相等了，简写写不出来) */
-    padding: 20px 48px 30px;
+    /* padding 原来是 20px 48px(上下 20/左右 48，Figma 基准值)，排查过
+       没有响应式变化——全文件只有这一条 .mobile-nav 规则，没有 @media
+       覆盖，也没有 clamp()/vw，是纯字面值。上次任务先把底部单独改成
+       30px(拆成 20px 48px 30px 三值写法)，这次任务顶部同步改成 30px，
+       上下重新统一，左右 48px 不变——改回两值简写 30px 48px */
+    padding: 30px 48px;
     column-gap: 0;
     transition: column-gap 350ms ease-out;
     position: fixed;
@@ -1940,4 +1940,44 @@ main { padding: 0; }
 }
 .coming-soon-cta:hover {
     background: #005ba3;
+}
+
+/* ============================================================
+   邮箱复制成功提示——照抄 style.css 里桌面端同名的 .copy-toast 规则，
+   不重新设计一版。mobile.html 不加载 style.css，只加载
+   content.css/mobile.css，这条规则不会跟着 style.css 一起进来，得在
+   这边单独补一份，不然 mobile.js 里 showToast() 建出来的
+   .copy-toast 元素没有任何样式，是个没有背景/定位的裸文字节点。
+   逻辑见 mobile.js 里的 showToast()——元素本身在 animationend 时被
+   JS 移除，2s 这个数字只用改这一处，不用跟 JS 里的计时器对齐。
+
+   排查结论（"toast 背景色改成 brand color"任务）：这条规则和桌面端
+   style.css 里的 .copy-toast 从一开始就是两条独立的规则（不是共用
+   同一份 CSS，只是复制过来的一份拷贝，各自只在自己的页面里加载），
+   改这边的 background 不会影响桌面端，不需要额外加移动端专属 class
+   区分。background 原来是字面值 #6D96B5（照抄桌面端那次留下的），
+   这次改成 var(--brand)（content.css :root 定义，mobile.html 也
+   加载了 content.css，能直接取到）——桌面端 style.css 里那份没有动，
+   保持 #6D96B5 不变 */
+.copy-toast {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--brand);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-family: var(--font-avenir);
+    font-weight: 500;
+    font-size: 14px;
+    pointer-events: none;
+    z-index: 200;
+    animation: toastFade 2s ease forwards;
+}
+@keyframes toastFade {
+    0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.95); }
+    15%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    85%  { opacity: 1; }
+    100% { opacity: 0; }
 }

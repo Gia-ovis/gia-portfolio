@@ -1468,11 +1468,30 @@ main { padding: 0 24px; container-type: inline-size; }
    缓冲区真正需要的高度只是"比 sticky 自己高一点，让 position:sticky
    有空间可以钉住/松开"，不需要预留滚动手感的缓冲——手感完全是 wheel
    handler 自己内部用 WHEEL_TO_PROGRESS/MAX_STEP 控制的，跟这段 DOM
-   高度没关系。改成 sticky 高度 + 一小截（80px，给钉住/松开的过渡留一点
-   呼吸感，不是 0），画廊一滚到底，纵向滚动马上就能继续，不再空转 */
+   高度没关系。改成 sticky 高度 + 一小截，画廊一滚到底，纵向滚动马上
+   就能继续，不再空转。
+
+   排查结论（About 横向滚动完全失灵排查）：上面这个"一小截"当时定的是
+   80px，排查这次任务报的"进来就卡死/滚到某个进度卡死"才发现这个数值
+   本身踩了另一个坑——about.js 的 isPinned() 判断只在 body.scrollTop
+   落在这一小截缓冲区范围内时才成立，只有那时候 wheel handler 才会
+   preventDefault() 接管。80px 比一次普通的 wheel/触控板单次滚动量还
+   窄（鼠标滚轮单次 notch、触控板一次惯性滑动的 deltaY 常见就有
+   100px+），一次滚动就能把 scrollTop 整段跳过这个窗口，wheel handler
+   一次都没等到 isPinned()===true 的时机，直接落到画廊后面，横向交互
+   从头到尾没有被触发过——不是运行时中途卡死，是这个窗口从一开始就没
+   被命中。实测过（headless Chrome 扫描 body.scrollTop）：80px 名义值，
+   实际测出来的"真正钉住"区间只有约 48px。
+   改成 300px（比 80px 宽出一大截，让绝大多数单次 wheel/触控板事件的
+   deltaY 都不足以整段跳过这个窗口），换来的代价是画廊滚完之后要多滚
+   这一截才能继续离开 #about——跟上面这段注释原本要解决的"死区"问题是
+   同一类 trade-off，300px 是折中值，如果实测触控板惯性快速划动依然
+   偶尔跳过，再继续往上调（overlay.js 里对应 'about' 入口把初始滚动
+   位置精确定位到这个窗口正中间的那段逻辑，缓冲区数值改了要同步改那边
+   的 BUFFER_PX，两处要对上） */
 .about-scroll-wrapper {
     position: relative;
-    height: calc(100vh + 80px);
+    height: calc(100vh + 300px);
 }
 .about-sticky {
     position: sticky;
