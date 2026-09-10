@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="content.css">
+<link rel="stylesheet" href="drayeasy.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Monda:wght@500;600&family=Montserrat:wght@500&family=Caveat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<title>Gia Wang - DrayEasy</title>
+</head>
+<body>
+
+<!-- 现在只作为 case-overlay.js 的 fetch 数据源存在：只 fetch 这个文件
+     的文本、解析出 <main>、clone 进第二层浮层，<head>/<body> 本身不会
+     被用到。这两个 <link> 只在"直接打开这个文件"的退化兜底路径下才有
+     意义（比如 case-overlay.js 没加载成功，按钮走原生 href 跳转到这里）——
+     正常路径下样式来自宿主页面已经动态 <link> 好的 content.css/
+     drayeasy.css，不依赖这里 -->
+
+<main>
+
+    <img class="case-hero-img" src="assets/images/drayeasy/hero.png" alt="DrayEasy">
+
+    <div class="case-content">
+
+        <div class="case-tag">
+            <span class="case-tag-dot" aria-hidden="true"></span>
+            <span class="case-tag-text">Shipped</span>
+        </div>
+
+        <h2 class="case-title">Simplifying Rate Search for Freight Forwarders</h2>
+
+        <p class="case-subtitle">Redesign DrayEasy's rate-search flow around real drayage workflow, reducing friction across common and edge-case scenarios.</p>
+
+        <div class="case-divider"></div>
+
+        <div class="case-meta">
+            <div class="case-meta-col">
+                <span class="case-meta-label">ROLE</span>
+                <span class="case-meta-value">UX Designer</span>
+            </div>
+            <div class="case-meta-col">
+                <span class="case-meta-label">MY CONTRIBUTION</span>
+                <span class="case-meta-value">Domain research<br>Journey mapping<br>Workflow restructuring<br>Wireframe iteration</span>
+            </div>
+            <div class="case-meta-col">
+                <span class="case-meta-label">TEAM</span>
+                <span class="case-meta-value">6 UX designers<br>1 PM + engineering</span>
+            </div>
+            <div class="case-meta-col">
+                <span class="case-meta-label">TIMELINE</span>
+                <span class="case-meta-value">Feb - May 2023</span>
+            </div>
+            <div class="case-meta-col">
+                <span class="case-meta-label">OUTCOME</span>
+                <span class="case-meta-value">Shipped in 2023<br>Still live today</span>
+            </div>
+        </div>
+
+    </div>
+
+    <section class="case-problem-band">
+        <div class="case-problem-inner">
+
+            <div class="case-problem-card">
+                <h3 class="case-problem-card-title">📌 Problem Overview</h3>
+                <div class="case-problem-card-body">
+                    <p>DrayEasy had a strong rate database, but a difficult search experience.</p>
+                    <ol>
+                        <li>Workflow didn't match real user scenario</li>
+                        <li>Too many branches made tasks harder</li>
+                        <li>Weak support for edge cases</li>
+                    </ol>
+                </div>
+            </div>
+
+            <img class="case-problem-img" src="assets/images/drayeasy/old website.png" alt="DrayEasy's old website">
+
+        </div>
+    </section>
+
+    <section class="case-workflow">
+
+        <h3 class="case-workflow-title">Key Workflow Improvements</h3>
+
+        <div class="case-improvements">
+
+            <div class="case-improvement">
+                <h4 class="case-improvement-title">1. Make repeat actions easier to access</h4>
+                <div class="case-improvement-cols">
+
+                    <div class="case-improvement-col">
+                        <div class="case-media-frame">
+                            <div class="case-media-crop">
+                                <video class="case-media" src="assets/images/drayeasy/search history_before.mp4" autoplay loop muted playsinline></video>
+                            </div>
+                        </div>
+                        <div class="case-improvement-text">
+                            <p class="case-improvement-label case-improvement-label-problem">Problem:</p>
+                            <p class="case-improvement-body">Users often returned to familiar routes, but search history was hidden.</p>
+                        </div>
+                    </div>
+
+                    <div class="case-improvement-col">
+                        <div class="case-media-frame">
+                            <img class="case-media" src="assets/images/drayeasy/search history_after.png" alt="Recent searches surfaced on the main page">
+                        </div>
+                        <div class="case-improvement-text">
+                            <p class="case-improvement-label case-improvement-label-solution">Solution:</p>
+                            <p class="case-improvement-body">Enable <em class="case-em">one-click reuse</em> by surfacing recent searches directly on the main page.</p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="case-improvement">
+                <h4 class="case-improvement-title">2. Turn dead ends into alternatives</h4>
+                <div class="case-improvement-cols case-improvement-cols-top">
+
+                    <div class="case-improvement-col">
+                        <div class="case-media-frame">
+                            <img class="case-media" src="assets/images/drayeasy/dead end_before.png" alt="No results found for an otherwise viable route">
+                        </div>
+                        <div class="case-improvement-text">
+                            <p class="case-improvement-label case-improvement-label-problem">Problem:</p>
+                            <p class="case-improvement-body">Users could hit "no results" even when nearby routes were still viable.</p>
+                        </div>
+                    </div>
+
+                    <div class="case-improvement-col">
+                        <div class="case-media-frame">
+                            <img class="case-media" src="assets/images/drayeasy/recommended routes.png" alt="Recommended nearby routes offered as alternatives">
+                        </div>
+                        <div class="case-improvement-text">
+                            <p class="case-improvement-label case-improvement-label-solution">Solution:</p>
+                            <p class="case-improvement-body">Offer viable alternatives by recommending nearby routes before manual support to reduce dead ends.</p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="case-improvement">
+                <h4 class="case-improvement-title">3. Catch mismatched scenarios earlier</h4>
+                <div class="case-improvement-cols case-improvement-cols-top">
+
+                    <div class="case-improvement-col">
+                        <div class="case-media-frame case-media-frame-short">
+                            <img class="case-media" src="assets/images/drayeasy/cargo type_before.png" alt="Unusable rate result from a mismatched cargo type">
+                        </div>
+                        <div class="case-improvement-text">
+                            <p class="case-improvement-label case-improvement-label-problem">Problem:</p>
+                            <p class="case-improvement-body">Users could get an unusable rate, <em class="case-em">forcing another search or a support request</em>.</p>
+                        </div>
+                    </div>
+
+                    <div class="case-improvement-col">
+                        <div class="case-media-frame case-media-frame-short">
+                            <img class="case-media" src="assets/images/drayeasy/cargo type_after.png" alt="Cargo constraints surfaced earlier in the search flow">
+                        </div>
+                        <div class="case-improvement-text">
+                            <p class="case-improvement-label case-improvement-label-solution">Solution:</p>
+                            <p class="case-improvement-body">Avoid irrelevant rates by surfacing key cargo constraints earlier in the search flow.</p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+    </section>
+
+    <section class="case-before-band">
+        <div class="case-before-inner">
+
+            <h3 class="case-before-title">Before Redesign</h3>
+
+            <div class="case-before-list">
+
+                <div class="case-before-part case-before-part-1">
+                    <div class="case-before-heading">
+                        <h4 class="case-before-subtitle">Understand how users actually get a quote</h4>
+                        <p class="case-before-desc">I combined <em class="case-em">expert interviews</em>, <em class="case-em">competitive analysis</em>, and <em class="case-em">journey mapping</em> to learn how freight forwarders searched, compared, and moved a quote forward.</p>
+                    </div>
+                    <img class="case-before-journey-img" src="assets/images/drayeasy/journey map.png" alt="Journey map of how freight forwarders get a quote">
+                </div>
+
+                <div class="case-before-part case-before-part-2">
+                    <div class="case-before-heading">
+                        <h4 class="case-before-subtitle">Remove choices that didn't help users move forward</h4>
+                        <p class="case-before-desc">I restructured the flow around what users actually needed to do: search, compare, book, save, or get support when needed.</p>
+                    </div>
+
+                    <div class="case-before-flow-group">
+
+                        <div class="case-before-flow-row">
+                            <img class="case-before-flow-img" src="assets/images/drayeasy/user flow_before.png" alt="User flow before redesign">
+                            <div class="case-before-flow-text">
+                                <p class="case-before-flow-label case-before-flow-label-before">Before</p>
+                                <p class="case-before-flow-body">Too many <em class="case-em">branches</em> made the flow harder to follow, even when several paths still led to manual support.</p>
+                            </div>
+                        </div>
+
+                        <div class="case-before-flow-row">
+                            <img class="case-before-flow-img" src="assets/images/drayeasy/user flow_after.png" alt="User flow after redesign">
+                            <div class="case-before-flow-text">
+                                <p class="case-before-flow-label case-before-flow-label-after">After</p>
+                                <p class="case-before-flow-body">A more <em class="case-em">streamlined</em> flow focused on the actions users actually needed to move a quote forward.</p>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </section>
+
+    <section class="case-process">
+
+        <h3 class="case-process-title">Design Process at a Glance</h3>
+
+        <div class="case-process-list">
+
+            <div class="case-process-section case-process-section-1">
+                <div class="case-process-heading">
+                    <h4 class="case-process-subtitle">Exploring layouts</h4>
+                    <p class="case-process-desc">We compared multiple layouts before choosing a top-to-bottom structure that kept key information together and reduced competition with the map.</p>
+                </div>
+                <img class="case-process-layouts-img" src="assets/images/drayeasy/layouts.png" alt="Layout exploration options">
+            </div>
+
+            <div class="case-process-section case-process-section-2">
+                <div class="case-process-heading">
+                    <h4 class="case-process-subtitle">Refining interactions</h4>
+                    <p class="case-process-desc">We iterated on search inputs, recommendations, cargo constraints, and map behavior to balance clarity, density, and discoverability.</p>
+                </div>
+
+                <div class="case-process-cards">
+                    <div class="case-process-card case-process-card-1">
+                        <p class="case-process-card-title">Search input iterations</p>
+                        <img class="case-process-card-img" src="assets/images/drayeasy/search inputs_iterations.png" alt="Search input iterations">
+                    </div>
+                    <div class="case-process-card case-process-card-2">
+                        <p class="case-process-card-title">Map iterations</p>
+                        <img class="case-process-card-img" src="assets/images/drayeasy/map_iterations.png" alt="Map iterations">
+                    </div>
+                    <div class="case-process-card case-process-card-3">
+                        <p class="case-process-card-title">Cargo type iterations</p>
+                        <img class="case-process-card-img" src="assets/images/drayeasy/cargo type_iterations.png" alt="Cargo type iterations">
+                    </div>
+                </div>
+            </div>
+
+            <div class="case-process-section case-process-section-3">
+                <div class="case-process-heading">
+                    <h4 class="case-process-subtitle">Cleaning up rate request flow</h4>
+                    <p class="case-process-desc">We also cleaned up the rate request view to better fit the new workflow, with clearer status, filters, and actions.</p>
+                </div>
+
+                <div class="case-process-rate-group">
+                    <div class="case-process-rate-col case-process-rate-col-1">
+                        <img class="case-process-rate-img" src="assets/images/drayeasy/rate request_before.png" alt="Rate request view before">
+                        <p class="case-process-rate-label case-process-rate-label-before">Before</p>
+                    </div>
+                    <div class="case-process-rate-col case-process-rate-col-2">
+                        <img class="case-process-rate-img" src="assets/images/drayeasy/rate request_after.png" alt="Rate request view after">
+                        <p class="case-process-rate-label case-process-rate-label-after">After</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </section>
+
+    <section class="case-production">
+
+        <h3 class="case-production-title">From Prototype to Production</h3>
+
+        <div class="case-production-content">
+
+            <div class="case-production-card">
+                <h4 class="case-production-card-title">🔎 Usability testing</h4>
+                <p class="case-production-card-body">Tested the mid-fi prototype with 2 customers and the PM, then refined a few last-mile issues before delivery.</p>
+            </div>
+
+            <div class="case-production-groups">
+
+                <div class="case-production-group">
+                    <img class="case-production-img" src="assets/images/drayeasy/design system.png" alt="Reusable design system components">
+                    <div class="case-production-text">
+                        <h4 class="case-production-subtitle">Build a reusable design system</h4>
+                        <p class="case-production-desc">We created shared components, typography, colors, and logistics icons, reviewing key patterns <em class="case-em">with engineering</em> to keep them consistent and feasible to build.</p>
+                    </div>
+                </div>
+
+                <div class="case-production-group">
+                    <img class="case-production-img case-production-img-bordered" src="assets/images/drayeasy/live in 2026.png" alt="Product still live in 2026">
+                    <div class="case-production-text">
+                        <h4 class="case-production-subtitle">Shipped in 2023, still live in 2026</h4>
+                        <p class="case-production-desc">The redesign launched in 2023 and is still live today. Since then, the product has added new rate categories, expanded search options, and more features <em class="case-em">while keeping the core search structure</em>.</p>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+    <section class="case-closing">
+
+        <h3 class="case-closing-title">What This Project Changed for Me</h3>
+
+        <p class="case-closing-body">Complex workflows shouldn't feel complex just because the system behind them is. My job is to understand the complexity first, then simplify what users actually need to see and do.</p>
+
+    </section>
+
+</main>
+
+</body>
+</html>

@@ -1,0 +1,812 @@
+/* ============================================================
+   DrayEasy case study 内容——这份 CSS 现在只管"内容"本身（hero 图 +
+   tag/标题/副标题/分隔线/元信息行），不管任何"壳"：背景墙、返回/关闭
+   按钮、圆角面板这些都交给 case-overlay.js/case-overlay.css 的第二层
+   浮层去提供，跟 content.html 不自己管 .content-overlay-scrim/
+   .content-overlay-panel 是同一个分工原则——drayeasy.html 现在只是
+   被 case-overlay.js fetch 的纯内容源，正常情况下不会被直接打开。
+
+   hero 图顶部两角为什么不用自己写 border-radius：被 fetch 进第二层
+   浮层时，.case-overlay-panel 自己有 border-radius:16px 16px 0 0 +
+   overflow:hidden，套在 hero 图外面，天然把 hero 图顶部裁成同样的圆角，
+   不需要在这里另外声明。
+
+   :root 变量继续复用 content.css，这里不重复定义。
+   ============================================================ */
+
+/* content.css 的 body 是给 Work/Sandbox/About 内容用的（Hiragino 字体 +
+   #3f4d5a），跟 case study 这边要求的 Avenir + --text-primary 冲突，
+   显式覆盖，不改 content.css 本身。只在 drayeasy.html 被直接打开这个
+   退化兜底路径下才用得到（被 fetch 进浮层时只有 <main> 会被克隆，
+   <body> 上的规则不会跟着生效——.case-content 自己也重复设了一遍
+   font-family/color，不靠这条 body 规则兜底） */
+body {
+    font-family: var(--font-avenir);
+    color: var(--text-primary);
+}
+
+/* Hero 图为什么没有满宽：<main> 不是这份 CSS 自己的容器，是
+   content.css 里裸标签选择器 main { padding: 0 24px; } 管的（content.css
+   在两种宿主页面里都是全局加载的，选择器没有加任何 class 限定，被 fetch
+   进来的这个 <main> 一样会命中），克隆进 .case-overlay-body 之后这条
+   padding originally 是给 content.html 自己的项目卡片留边距用的，但也会
+   套在这个 <main> 上，把 hero 图的可用宽度从两边各吃掉 24px——width:100%
+   只是"填满父级内容区"，父级内容区本身已经因为这条 padding 变窄了。
+   用跟 .work-banner 当初同一个手法：calc(100% + 48px) + 左右各 -24px
+   负 margin，精确抵消这条 padding，不用 100vw（那样在被 clone 进浮层
+   的场景下会按裸视口算，跟浮层面板实际宽度对不上，浮层面板本来就不是
+   全屏宽）。贴在容器最顶部，不留间距，高度跟着原始比例走，不写死 */
+.case-hero-img {
+    display: block;
+    width: calc(100% + 48px);
+    margin-left: -24px;
+    margin-right: -24px;
+    height: auto;
+}
+
+/* 内容区容器：包住 hero 图以下所有内容 */
+.case-content {
+    max-width: 1056px;
+    margin: 0 auto;
+    font-family: var(--font-avenir);
+    color: var(--text-primary);
+}
+
+/* Shipped tag */
+.case-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 12px;
+    border-radius: 50px;
+    background: var(--tag-green);
+    margin-top: 48px;   /* hero 图底部 → tag 顶部 */
+}
+.case-tag-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #00D4E0;
+}
+.case-tag-text {
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 19px;
+    color: var(--text-primary);
+}
+
+/* 标题 */
+.case-title {
+    margin-top: 24px;   /* tag 底部 → 标题顶部 */
+    font-weight: 500;
+    font-size: 40px;
+    line-height: 62px;
+    letter-spacing: -0.02em;
+}
+
+/* 副标题 */
+.case-subtitle {
+    margin-top: 8px;   /* 标题 → 副标题 */
+    font-weight: 500;
+    font-size: 16px;
+    line-height: 22px;
+}
+
+/* 分隔线 */
+.case-divider {
+    margin-top: 118px;   /* 副标题底部 → 分隔线 */
+    width: 100%;
+    height: 0;
+    border-top: 0.5px solid var(--stroke);
+}
+
+/* 元信息行 */
+.case-meta {
+    margin-top: 36px;   /* 分隔线 → 元信息行 */
+    margin-bottom: 130px;   /* 元信息行 → Problem Overview 区块，靠 margin
+                                collapse 穿过 .case-content（自己没有
+                                padding/border）体现在它和下面 .case-problem-band
+                                之间，不需要额外处理 */
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+.case-meta-col {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+.case-meta-label {
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 16px;
+    color: var(--text-secondary);
+}
+.case-meta-value {
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 150%;
+    color: var(--text-primary);
+}
+
+/* ============================================================
+   Problem Overview 区块
+   ============================================================ */
+
+/* 蓝色背景带：满宽出血，跟 hero 图同一个手法——.case-problem-band 是
+   <main> 的直接子元素（跟 .case-content 平级，不是嵌在它里面），
+   同样会被 content.css 的裸标签选择器 main { padding: 0 24px; } 收窄，
+   用 calc(100% + 48px) + 左右 -24px 负 margin 精确抵消。上下 64px
+   padding 撑开背景带本身的高度，168px 是区块本身到下一个区块的间距 */
+.case-problem-band {
+    width: calc(100% + 48px);
+    margin-left: -24px;
+    margin-right: -24px;
+    margin-bottom: 168px;   /* Problem Overview 区块 → 下一个区块 */
+
+    background: var(--bg-blue);
+    padding: 64px 0;
+}
+
+/* 背景带内部的实际内容再收回 1056px 居中，左栏卡片固定 317px、右栏图
+   固定 706px，中间空隙靠 space-between 自动撑开（317+706=1023，
+   1056-1023=33px 间距），不是写死的 gap */
+.case-problem-inner {
+    max-width: 1056px;
+    margin: 0 auto;
+
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+}
+
+.case-problem-card {
+    box-sizing: border-box;
+    width: 317px;
+    padding: 16px;
+
+    background: var(--bg-reading);
+    border: 1px solid var(--bg-white);
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.08);
+    border-radius: 12px;
+
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.case-problem-card-title {
+    font-family: var(--font-avenir);
+    font-weight: 500;
+    font-size: 16px;
+    line-height: 22px;
+    color: var(--text-primary);
+}
+
+.case-problem-card-body p,
+.case-problem-card-body ol {
+    font-family: var(--font-avenir);
+    font-size: 14px;
+    line-height: 150%;
+    color: var(--text-primary);
+}
+.case-problem-card-body p {
+    font-weight: 350;
+}
+/* content.css 顶部的 * { margin:0; padding:0; } 全局重置会把 <ol> 默认
+   给编号留的 padding-left 也一起清零，不重新给回来的话数字会跟卡片
+   左边缘完全贴齐、甚至被裁切。list-style-position:outside 是显式声明
+   （跟浏览器默认值一样，但不依赖"没被谁改过"这个假设） */
+.case-problem-card-body ol {
+    margin-top: 16px;   /* <p> → <ol> */
+    font-weight: 500;
+    list-style-position: outside;
+    padding-left: 20px;
+}
+.case-problem-card-body li + li {
+    margin-top: 4px;
+}
+
+.case-problem-img {
+    width: 706px;
+    height: auto;
+    border-radius: 12px;
+    filter:
+        drop-shadow(-4px -4px 24px rgba(0, 0, 0, 0.07))
+        drop-shadow(8px 12px 24px rgba(0, 0, 0, 0.07));
+}
+
+/* ============================================================
+   Key Workflow Improvements 区块——跟 Problem Overview 不一样，这里
+   没有满宽出血的色块（白色背景，不是蓝色带），所以不需要
+   calc(100% + 48px) 那套抵消 main padding 的手法，直接一个 1056px
+   居中容器就够了，跟 .case-content 是同一个道理
+   ============================================================ */
+.case-workflow {
+    max-width: 1056px;
+    margin: 0 auto;
+    margin-bottom: 168px;   /* 区块本身 → 下一个区块，先跟 Problem Overview 一致 */
+
+    background: #fff;
+
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 72px;
+}
+
+.case-workflow-title {
+    font-family: var(--font-avenir);
+    font-weight: 500;
+    font-size: 32px;
+    line-height: 44px;
+    color: var(--text-primary);
+}
+
+/* align-items:flex-start 的 flex 列容器不会自动把子元素拉伸到容器宽度，
+   这里显式给 100% 宽度，不然会缩到内容自身宽度 */
+.case-improvements {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 108px;
+}
+
+.case-improvement-title {
+    margin-bottom: 16px;
+    font-family: var(--font-avenir);
+    font-weight: 500;
+    font-size: 24px;
+    line-height: 33px;
+    color: var(--brand);
+}
+
+.case-improvement-cols {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 37px;
+}
+/* improvement 2 专用：右栏正文比左栏长，会折成两行，文字区变高——
+   顶对齐让两个媒体框的顶边保持齐平，不因为下面文字高度不同而错位。
+   故意不限制文字区高度去强行拉平，两栏底部自然不齐是预期效果 */
+.case-improvement-cols-top {
+    align-items: flex-start;
+}
+
+/* flex:1 自动平分剩余宽度（1056 - 37 间距）÷ 2，不写死 511px——按你
+   说的，容器从设计稿的 1069 变成这里实际的 1056，写死数字会跟设计稿
+   对不上 */
+.case-improvement-col {
+    flex: 1;
+    min-width: 0;   /* 允许在 flex 里正常缩小，不被视频/图片的原始内在尺寸撑爆 */
+
+    display: flex;
+    flex-direction: column;
+}
+
+/* 媒体框：511:453 的比例是设计稿给的固定值，宽度跟着 .case-improvement-col
+   撑满，高度靠 aspect-ratio 算，不是写死的 px。视频/图片都用 flex 居中，
+   96% 宽度等比缩放（width 百分比 + height:auto，不拉伸变形），框本身
+   不需要 overflow:hidden——媒体本身就比框小(96%)，不会溢出 */
+.case-media-frame {
+    width: 100%;
+    aspect-ratio: 511 / 453;
+    margin-bottom: 12px;
+
+    background: var(--bg-white);
+    border: 0.5px solid var(--stroke);
+    border-radius: 12px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+/* improvement 3 专用：媒体框比前两组矮，511:353 而不是 511:453 */
+.case-media-frame-short {
+    aspect-ratio: 511 / 353;
+}
+/* 视频/图片本身都不加 shadow——六张媒体导出时已经自带，这里加会重复 */
+.case-media {
+    width: 96%;
+    height: auto;
+}
+
+/* 只套在 search history_before.mp4 这一个视频外面，裁掉四周各 8px，
+   不动右侧图片（图片还是走上面 .case-media 那条通用规则）。
+
+   .case-media-crop 占的宽高就是"裁切前"视频原来占的那个位置/尺寸
+   （width:96%，height 靠 aspect-ratio 算，不用 height:auto——height:auto
+   要看内部 <video> 的高度，而下面 <video> 的高度又是按 .case-media-crop
+   的百分比算的，两个互相依赖会死循环，撑不出高度）。512/454 是这条
+   视频本身的原生像素尺寸（mdls 量的），跟媒体框的 511:453 基本一致，
+   跟原来 height:auto 用同一个比例，wrapper 算出来的高度和裁切前完全
+   一样，footprint 不会变。
+
+   内部 <video> 本身放大到 calc(100% + 16px)（宽高各比 wrapper 多
+   16px）+ margin:-8px 居中覆盖，多出来的 8px 在每一边都探出
+   wrapper 边界，被 overflow:hidden 裁掉——裁完剩下可见的部分正好
+   填满 wrapper 的整个框，视觉上位置/尺寸跟裁切前一致，只是画面
+   四周各少了 8px 原始内容，不是整体缩小 */
+.case-media-crop {
+    width: 96%;
+    aspect-ratio: 512 / 454;
+    overflow: hidden;
+}
+.case-media-crop .case-media {
+    display: block;
+    width: calc(100% + 16px);
+    height: calc(100% + 16px);
+    margin: -8px;
+}
+
+.case-improvement-text {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.case-improvement-label {
+    font-family: var(--font-avenir);
+    font-weight: 500;
+    font-size: 16px;
+    line-height: 22px;
+}
+.case-improvement-label-problem {
+    color: var(--text-warning);
+}
+.case-improvement-label-solution {
+    color: var(--brand);
+}
+.case-improvement-body {
+    font-family: var(--font-avenir);
+    font-weight: 350;
+    font-size: 14px;
+    line-height: 150%;
+    color: var(--text-secondary);
+}
+
+/* 行内强调——不是 case study 专属的东西，往后其他 case study 的正文
+   也能直接复用这个 class。只覆盖强调本身需要变的三条（斜体/比正文
+   .case-improvement-body 的 350 重一档/换成 --text-primary），
+   font-family/font-size/line-height 不重复声明，跟着包住它的正文元素
+   自然继承 */
+.case-em {
+    font-style: italic;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+/* ============================================================
+   Before Redesign 区块——灰色背景带，满宽出血，做法跟 Problem Overview
+   的蓝色带完全一致（.case-problem-band 那套 calc(100%+48px) 手法）
+   ============================================================ */
+.case-before-band {
+    width: calc(100% + 48px);
+    margin-left: -24px;
+    margin-right: -24px;
+    margin-bottom: 168px;   /* 区块本身 → 下一个区块，跟前面几个区块一致 */
+
+    background: #F5F5F5;   /* content.css 的 :root 里没有这个颜色，直接写十六进制 */
+    padding: 84px 0;
+}
+
+.case-before-inner {
+    max-width: 1056px;
+    margin: 0 auto;
+
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 72px;
+}
+
+.case-before-title {
+    font-family: var(--font-avenir);
+    font-weight: 500;
+    font-size: 32px;
+    line-height: 44px;
+    color: var(--text-primary);
+}
+
+/* align-items:flex-start 的父级不会自动拉伸子元素到容器宽度，跟
+   .case-improvements 同样的原因，这里也要显式给 100% */
+.case-before-list {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 108px;
+}
+
+.case-before-part {
+    display: flex;
+    flex-direction: column;
+}
+.case-before-part-1 {
+    gap: 24px;
+}
+.case-before-part-2 {
+    gap: 64px;
+}
+
+.case-before-heading {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.case-before-subtitle {
+    font-family: var(--font-avenir);
+    font-weight: 500;
+    font-size: 24px;
+    line-height: 33px;
+    color: var(--brand);
+}
+.case-before-desc {
+    font-family: var(--font-avenir);
+    font-weight: 350;
+    font-size: 14px;
+    line-height: 150%;
+    color: var(--text-secondary);
+}
+
+/* 第一部分的 journey map 图：不加圆角、不加 shadow，满宽 */
+.case-before-journey-img {
+    width: 100%;
+    height: auto;
+}
+
+.case-before-flow-group {
+    display: flex;
+    flex-direction: column;
+    gap: 36px;
+}
+.case-before-flow-row {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 42px;
+}
+/* 图片用 flex:1 跟固定 212px 的文字块自动分配剩余宽度（1056-42-212≈802px，
+   跟设计稿给的 798px 很接近，但不写死——按你说的，容器实际宽度以
+   .case-before-inner 的 1056px 为准，写死数字会跟设计稿基准对不上）*/
+.case-before-flow-img {
+    flex: 1;
+    min-width: 0;
+    height: auto;
+    border-radius: 12px;
+}
+.case-before-flow-text {
+    width: 212px;
+    flex: 0 0 212px;
+
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.case-before-flow-label {
+    font-family: var(--font-avenir);
+    font-weight: 500;
+    font-size: 16px;
+    line-height: 22px;
+}
+.case-before-flow-label-before {
+    color: var(--text-warning);
+}
+.case-before-flow-label-after {
+    color: var(--brand);
+}
+/* 注意：这里正文是 16px，跟 improvement 区块的 14px 不一样 */
+.case-before-flow-body {
+    font-family: var(--font-avenir);
+    font-weight: 350;
+    font-size: 16px;
+    line-height: 150%;
+    color: var(--text-primary);
+}
+
+/* ============================================================
+   Design Process at a Glance 区块——白色背景，不是色带，不需要
+   calc(100%+48px) 那套出血手法，直接 1056px 居中容器就够了，跟
+   .case-workflow 是同一个道理
+   ============================================================ */
+.case-process {
+    max-width: 1056px;
+    margin: 0 auto;
+    margin-bottom: 250px;
+
+    background: #fff;
+
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 72px;
+}
+
+.case-process-title {
+    font-family: var(--font-avenir);
+    font-weight: 500;
+    font-size: 32px;
+    line-height: 44px;
+    color: var(--text-primary);
+}
+
+/* align-items:flex-start 的父级不会自动拉伸子元素到容器宽度，这里
+   显式给 100%——跟 .case-improvements/.case-before-list 同一个原因。
+   往下 .case-process-section/.case-process-heading/.case-process-cards/
+   .case-process-rate-group 这几层都没有另外设 align-items，默认值
+   stretch 会让它们自动撑满各自父级的宽度，不需要再逐层重复写 width:100% */
+.case-process-list {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 108px;
+}
+
+.case-process-section {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+}
+
+.case-process-heading {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.case-process-subtitle {
+    font-family: var(--font-avenir);
+    font-weight: 500;
+    font-size: 24px;
+    line-height: 33px;
+    color: var(--brand);
+}
+.case-process-desc {
+    font-family: var(--font-avenir);
+    font-weight: 350;
+    font-size: 14px;
+    line-height: 150%;
+    color: var(--text-secondary);
+}
+
+/* 第一节：layouts 探索图，满宽，不加圆角不加 shadow */
+.case-process-layouts-img {
+    width: 100%;
+    height: auto;
+}
+
+/* 第二节：三张卡片横排，宽度按 Figma 给的 348/316/227 比例分配——
+   不是写死的像素宽度，是把这三个数字当 flex-grow 的权重用
+   （flex-basis:0，按权重分配 .case-process-cards 减去两条 67px gap
+   之后剩下的宽度），比例上等价于设计稿那三个数字，但会跟着容器实际
+   宽度走，不会因为写死 px 跟别处的响应式假设打架 */
+.case-process-cards {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 67px;
+}
+.case-process-card {
+    box-sizing: border-box;
+    padding: 24px;
+
+    background: var(--bg-white);
+    border: 0.5px solid var(--stroke);
+    border-radius: 12px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+.case-process-card-1 { flex: 348 1 0; gap: 25px; }
+.case-process-card-2 { flex: 316 1 0; gap: 26px; }
+.case-process-card-3 { flex: 227 1 0; gap: 24px; }
+
+/* 卡片标题要在卡片内容区里居中——卡片本身是 align-items:flex-start，
+   标题需要显式 width:100% 才会撑满宽度，text-align:center 才有意义 */
+.case-process-card-title {
+    width: 100%;
+    font-family: var(--font-avenir);
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 16px;
+    text-align: center;
+    color: var(--text-primary);
+}
+.case-process-card-img {
+    width: 100%;
+    height: auto;
+}
+
+/* 第三节：两组图+标签横排，宽度按 Figma 给的 562/450 比例分配，
+   跟三张卡片同一个 flex-grow 权重手法 */
+.case-process-rate-group {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 42px;
+}
+.case-process-rate-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+.case-process-rate-col-1 { flex: 562 1 0; }
+.case-process-rate-col-2 { flex: 450 1 0; }
+
+/* 这一节的图片带 border——前面几节的图（layouts/三张卡片图）都没有，
+   这里是唯一的例外，容易漏改 */
+.case-process-rate-img {
+    width: 100%;
+    height: auto;
+    border: 0.5px solid var(--stroke);
+    border-radius: 12px;
+}
+.case-process-rate-label {
+    font-family: var(--font-avenir);
+    font-weight: 500;
+    font-size: 16px;
+    line-height: 22px;
+    text-align: center;
+}
+.case-process-rate-label-before {
+    color: var(--text-warning);
+}
+.case-process-rate-label-after {
+    color: var(--brand);
+}
+
+/* ============================================================
+   From Prototype to Production 区块——白色背景，1056px 居中，
+   跟 .case-workflow/.case-process 同一个道理，不需要出血
+   ============================================================ */
+.case-production {
+    max-width: 1056px;
+    margin: 0 auto;
+    margin-bottom: 250px;   /* 跟前面几个区块的 168px 不一样，这里是 250px */
+
+    background: #fff;
+
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 72px;
+}
+
+.case-production-title {
+    font-family: var(--font-avenir);
+    font-weight: 500;
+    font-size: 32px;
+    line-height: 44px;
+    color: var(--text-primary);
+}
+
+/* .case-production 是 align-items:flex-start，这里要显式 width:100%
+   才会撑满；再往下 .case-production-groups/.case-production-group 都
+   没设 align-items，默认 stretch 会自动撑满，不用逐层重复写 */
+.case-production-content {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 84px;
+}
+
+/* Usability testing 卡片——视觉上跟 Problem Overview 那张卡片是同一个
+   配方（padding/background/border/box-shadow/border-radius 数值全部
+   照抄），但不是同一个 class：Problem Overview 那张宽度写死 317px
+   （两栏布局里的左栏），这张要撑满 1056px 整行，宽度行为不一样，
+   gap 也不一样（16px，Problem Overview 是 24px），所以另外起一套
+   class，不直接复用 .case-problem-card */
+.case-production-card {
+    box-sizing: border-box;
+    padding: 16px;
+
+    background: var(--bg-reading);
+    border: 1px solid var(--bg-white);
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.08);
+    border-radius: 12px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+}
+.case-production-card-title {
+    font-family: var(--font-avenir);
+    font-weight: 500;
+    font-size: 16px;
+    line-height: 22px;
+    color: var(--text-primary);
+}
+.case-production-card-body {
+    font-family: var(--font-avenir);
+    font-weight: 350;
+    font-size: 14px;
+    line-height: 150%;
+    color: var(--text-primary);
+}
+
+.case-production-groups {
+    display: flex;
+    flex-direction: column;
+    gap: 118px;
+}
+.case-production-group {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 64px;
+}
+/* 两组的图文比例完全一致（613:377），用同一套 flex-grow 权重，不写死
+   像素——两组以后要一起调整宽度比例，只用改这一处 */
+.case-production-img {
+    flex: 613 1 0;
+    min-width: 0;
+    height: auto;
+}
+/* 第二组的图带边框+圆角，第一组没有——两组共用 .case-production-img
+   做基础尺寸/布局，这个 class 只叠加边框相关的三条，不重复基础规则 */
+.case-production-img-bordered {
+    border: 0.5px solid var(--stroke);
+    border-radius: 12px;
+}
+.case-production-text {
+    flex: 377 1 0;
+    min-width: 0;
+
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+.case-production-subtitle {
+    font-family: var(--font-avenir);
+    font-weight: 500;
+    font-size: 24px;
+    line-height: 33px;
+    color: var(--brand);
+}
+.case-production-desc {
+    font-family: var(--font-avenir);
+    font-weight: 350;
+    font-size: 14px;
+    line-height: 150%;
+    color: var(--text-secondary);
+}
+
+/* ============================================================
+   页面最后一个区块——白色背景，1056px 居中，收尾。margin-bottom 是
+   给面板底部留白，不是给下一个区块留间距（后面没有区块了）
+   ============================================================ */
+.case-closing {
+    max-width: 1056px;
+    margin: 0 auto;
+    margin-bottom: 250px;
+
+    background: #fff;
+
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 48px;
+}
+
+.case-closing-title {
+    font-family: var(--font-avenir);
+    font-weight: 500;
+    font-size: 32px;
+    line-height: 44px;
+    color: var(--text-primary);
+}
+
+/* 24px，跟小标题同一个字号，不是其他区块正文常用的 14px——故意的 */
+.case-closing-body {
+    font-family: var(--font-avenir);
+    font-weight: 500;
+    font-size: 24px;
+    line-height: 33px;
+    color: var(--text-secondary);
+}

@@ -13,7 +13,10 @@
          避免移动端点后退会退回到刚被跳过的桌面版这种怪现象 -->
     <script>
         if (window.innerWidth < 1024) {
-            location.replace('mobile.html');
+            // 保留 query string（尤其是 ?case=xxx）——mobile.html 现在还
+            // 读不懂这个参数，没关系，先把它保住，等移动端补上 case study
+            // 支持时，分享出去的链接不用重新发一遍
+            location.replace('mobile.html' + location.search);
         }
     </script>
     <link rel="stylesheet" href="style.css">
@@ -31,7 +34,7 @@
          400/500/600/700 全部要——HanziPen TC 原来在各处用到的字重
          (400/600/700)都在这个范围内，500 是多请求的一档，不影响 -->
     <link href="https://fonts.googleapis.com/css2?family=Monda:wght@500;600&family=Montserrat:wght@500&family=Caveat:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <title>responsive scale test</title>
+    <title>Gia Wang - Product Designer</title>
 </head>
 <body class="intro">
 
@@ -143,6 +146,40 @@
         <button class="enter-wall-btn" type="button">Enter the wall</button>
     </div>
 
+    <!-- 分享出去的 case study 链接（index.html?case=xxx）落地时，要直接
+         呈现"墙已收起"的终态，不能先播一遍开场动画再跳过去——不改
+         script.js 的 collapse() 流程，而是在它跑起来之前，直接把终态
+         需要的几个状态手动设好，让 collapse() 那套动画序列根本没有机会
+         启动。这三行是"墙已收起"终态在代码里唯一不是纯 CSS class 驱动
+         的部分：
+         - body 去掉 intro：绝大部分视觉差异（.glass-layer、
+           .project-frame 的雾气模糊、.wall-shadow 宽度、.avatar 的
+           显隐）都是 body.intro 选择器驱动的覆盖规则，默认（无 intro）
+           就是收起态该有的样子，去掉这个 class 就自动全部到位，不用
+           逐个再写
+         - .intro-panel 的 visibility：这是唯一的例外，CSS 里从没给它
+           声明过 visibility，一直是靠 script.js 的 onWallWidthDone()
+           在收起动画真正播完那一刻才用内联样式切成 hidden——这里手动
+           补上，不然墙体只是缩小到 286px 那个中间态，不会真的消失
+         - #pixelAvatar 的 aria-expanded：跟 collapse() 里设的值保持
+           一致，纯粹是无障碍属性，不影响视觉
+
+         必须放在这里（.intro-panel 已经解析完、但后面还有一大截窗框/
+         雾气 canvas/项目卡片没解析完）而不是等 DOMContentLoaded——
+         同步阻塞的 <script> 会先于浏览器出下一帧画面执行，跟
+         index.html 顶部移动端重定向脚本是同一个"抢在渲染之前"的手法。
+
+         没有 ?case= 参数的正常访问，这段代码完全不执行，不产生任何
+         影响 -->
+    <script>
+        if (new URLSearchParams(location.search).has('case')) {
+            document.body.classList.remove('intro');
+            document.querySelector('.intro-panel').style.visibility = 'hidden';
+            var pixelAvatar = document.getElementById('pixelAvatar');
+            if (pixelAvatar) pixelAvatar.setAttribute('aria-expanded', 'false');
+        }
+    </script>
+
     <!-- 墙体投在下面的阴影：故意不放在 .intro-panel 里面——那个盒子自己
          overflow:hidden，如果阴影是它的子元素、又要露在盒子底边以外，
          会被直接裁掉看不见。跟 .intro-panel 平级、同样绝对定位，靠同一
@@ -200,6 +237,13 @@
 <!-- about.js 同理暴露 window.initAboutScrollJack，浮层里 About 区块的
      wheel 劫持/拖拽进度条都要在内容注入后手动重新初始化一次 -->
 <script src="about.js"></script>
+<!-- case-overlay.js：Selected Work 里 case study 的第二层浮层，独立于
+     overlay.js 的一套实现，不改 overlay.js 本身。必须放在 overlay.js
+     前面注册——两边都在 document 上监听 Escape，谁先注册谁先跑，
+     case-overlay.js 自己的处理器要能在第二层开着时用
+     stopImmediatePropagation() 拦掉 overlay.js 的 Escape 逻辑，不然
+     按一次 Escape 会把两层一起关掉 -->
+<script src="case-overlay.js"></script>
 <script src="overlay.js"></script>
 <!-- <script src="filter-tuner.js"></script> -->
 

@@ -1,0 +1,115 @@
+/* ============================================================
+   Case study 第二层浮层的壳子（scrim + panel + 右上角关闭按钮）。
+   由 case-overlay.js 动态 <link> 进页面，两种宿主页面（独立访问的
+   content.html，或被 clone 进 index.html 第一层浮层）都会用到同一份。
+
+   跟第一层（style.css 的 .content-overlay-scrim/.content-overlay-panel）
+   数值上尽量保持一致（top/left/right/bottom、圆角、box-shadow、背景色
+   照抄，不自己调），但这是独立的一份 CSS——不改 style.css。z-index 起点
+   定在 300，在全站现有最高点（.coming-soon-scrim 的 200）之上留出间距，
+   不会跟任何现有元素冲突。
+
+   scrim 背景是 transparent，不是 rgba(0,0,0,0.5)——第一层（overlay.js
+   的 .content-overlay-scrim）已经在底下铺了一层 50% 黑，这一层的 scrim
+   叠上去颜色会相乘变成约 0.75，比只开第一层时明显更暗。这个元素本身
+   还留着（不能删），职责是挡住指针事件（点它关闭第二层、不让滚轮/点击
+   漏到第一层），只是不再自己叠一层可见的暗色。
+
+   开关动效：panel 从 translateY(40px)+opacity:0 过渡到 translateY(0)+
+   opacity:1，打开 320ms / 关闭 240ms，用 class .is-open 切换 + CSS
+   transition 实现，不是 JS 逐帧动画。display:none↔block 不能被
+   transition 动画，这部分由 case-overlay.js 用内联 style.display 在
+   动画开始前/结束后手动切——过渡跑的时候 display 必须已经是 block，
+   动画结束后才真正切回 none，这两件事的时机由 JS 控制，这份 CSS 只管
+   "openCaseOverlay 里 style.display 已经切好之后，.is-open 这个 class
+   该长什么样"。prefers-reduced-motion 开着时直接去掉 transition，
+   case-overlay.js 里对应会跳过等 transitionend 的逻辑，改成立即切换，
+   两边要对得上，改这份 CSS 时留意一起改那边。
+   ============================================================ */
+
+/* display 不参与过渡（display 本身不是可动画属性），由 case-overlay.js
+   直接用内联 style.display 控制，跟 panel 的开关时机保持同步——scrim
+   现在是透明的，没有淡入淡出的必要，不需要 CSS class 来切它 */
+.case-overlay-scrim {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 300;
+
+    background: transparent;
+    pointer-events: auto;
+}
+
+.case-overlay-panel {
+    display: none;
+    position: fixed;
+    top: 10px;
+    left: 40px;
+    right: 40px;
+    bottom: 0;
+    z-index: 301;
+
+    background: #fff;
+    border-radius: 16px 16px 0 0;
+    overflow: hidden;
+    box-shadow: 0 -8px 40px rgba(20, 30, 50, 0.25);
+
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 240ms cubic-bezier(0.22, 1, 0.36, 1),
+                transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.case-overlay-panel.is-open {
+    opacity: 1;
+    transform: translateY(0);
+    transition-duration: 320ms;   /* 打开比关闭慢一点，关闭 240ms 沿用上面的默认值 */
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .case-overlay-panel {
+        transition: none;
+    }
+}
+
+.case-overlay-body {
+    height: 100%;
+    overflow-y: auto;
+}
+
+/* 右上角 X：panel 的直接子元素，不在 .case-overlay-body 里面——这样
+   不管 case study 内容滚多远，按钮始终钉在 panel 右上角，不跟着滚走。
+   position:absolute 相对 panel(position:fixed) 定位，24px+44px 的量
+   远小于 panel 实际渲染的宽高，不会被 panel 的 overflow:hidden 裁到 */
+.case-overlay-close {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    z-index: 10;
+
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: 50%;
+    padding: 0;
+    cursor: pointer;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+
+    transition: box-shadow 0.2s ease, background 0.2s ease;
+}
+.case-overlay-close svg {
+    width: 18px;
+    height: 18px;
+}
+.case-overlay-close:hover {
+    background: #fff;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+}
