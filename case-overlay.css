@@ -113,3 +113,89 @@
     background: #fff;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
 }
+
+/* ============================================================
+   ≤1023px：面板改全屏、从底部滑入，跟桌面版"贴着第一层浮层露一圈边"
+   的观感是两回事——手机屏幕本来就没有多余空间留边，全屏是标准的
+   移动端"卡片从底部盖上来"模式
+   ============================================================ */
+@media (max-width: 1023px) {
+    .case-overlay-panel {
+        inset: 0;
+        border-radius: 0;
+        box-shadow: none;
+
+        transform: translateY(100%);   /* 从底部滑入，不是桌面版那个轻微的 40px 上浮 */
+    }
+    .case-overlay-panel.is-open {
+        transform: translateY(0);
+    }
+
+    /* 桌面版是 position:absolute 相对 panel 定位——panel 自己带
+       transform（即使是 translateY(0) 这个"看起来什么都没变"的值，
+       也仍然是非 none 的 transform），会让它变成内部 position:fixed
+       后代的 containing block，所以这里写 position:fixed 在效果上
+       跟 absolute 是一回事：panel 铺满整个视口时两者数值上重合，
+       动画过程中也会跟着 panel 一起滑动，不会脱离面板单独悬空——这正是
+       想要的效果（按钮是面板自己的 UI，不是独立于面板存在的东西），
+       不是 fixed 没生效 */
+    .case-overlay-close {
+        position: fixed;
+        top: max(16px, env(safe-area-inset-top));
+        right: 16px;
+    }
+}
+
+/* ============================================================
+   大图点击放大（journey map.png / layouts.png，只在 ≤1023px 生效，
+   由 case-overlay.js 的事件委托驱动，匹配 [data-lightbox] 图片）。
+
+   放大不是自己写手势缩放逻辑——图片全屏铺开之后，直接依赖浏览器原生
+   的双指缩放（页面的 viewport meta 没有关掉 user-scalable，原生手势
+   本来就能用），不引入任何手势/缩放的 JS 或第三方库，是能达到"点击
+   放大、双指缩放"效果里最简单的实现
+   ============================================================ */
+.case-lightbox {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 400;   /* 盖过第二层浮层自己的 300/301 */
+
+    align-items: center;
+    justify-content: center;
+
+    background: #000;
+}
+.case-lightbox.is-open {
+    display: flex;
+}
+.case-lightbox-img {
+    max-width: 100%;
+    max-height: 100%;
+}
+.case-lightbox-close {
+    position: fixed;
+    top: max(16px, env(safe-area-inset-top));
+    right: 16px;
+    z-index: 401;
+
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: 50%;
+    padding: 0;
+    cursor: pointer;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    color: #fff;
+    background: rgba(255, 255, 255, 0.16);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+.case-lightbox-close svg {
+    width: 18px;
+    height: 18px;
+}

@@ -60,10 +60,14 @@
         </div>
     </div>
 
-    <!-- Selected Work —— 001 · DrayEasy。纯静态布局，跟桌面端 content.js
-         的 initComingSoonModal 还没接上（那是 content.js 的逻辑，移动端
-         目前只加载 mobile.js），data-case-study-ready 先标好，等移动端
-         也接上"施工中"弹窗再补 -->
+    <!-- Selected Work —— 001 · DrayEasy。已经接上 case-overlay.js（见
+         <head> 里的 <script>），data-case-study="drayeasy" 是点击委托
+         匹配用的属性，href 指向 drayeasy.html 是脚本没加载成功时的
+         退化兜底跳转——两边逻辑跟桌面端 content.html 的同一个按钮完全
+         一致，不是另外写的一套。不再是 data-case-study-ready="false"，
+         mobile.js 自己那份 Coming Soon 弹窗的触发器集合(document.
+         querySelectorAll('[data-case-study-ready="false"]'))查询时不会
+         再选中这个按钮 -->
     <div class="mobile-section-banner" id="work-banner">
         <h2 class="mobile-section-banner-title">Selected Work</h2>
     </div>
@@ -89,7 +93,7 @@
             <p class="mobile-project-subtitle">B2B SaaS   /  Complex Workflows  /  Design Systems</p>
         </div>
 
-        <a class="mobile-view-case-study-btn" href="#" data-case-study-ready="false">
+        <a class="mobile-view-case-study-btn" href="drayeasy.html" data-case-study="drayeasy">
             <span class="mobile-view-case-study-btn-text">View Case Study</span>
         </a>
     </div>
@@ -471,10 +475,15 @@
     </div>
 </nav>
 
-<!-- 只加载 mobile.js。桌面端专属的 fog.js / overlay.js / debug-panel.js /
-     grid.js / about.js / content.js / script.js 一律不引入——这些要么依赖
-     #stage 那套窗户 DOM 结构，要么是纯桌面调试工具，移动端用不上，引入
-     了也是白白增加加载体积 -->
+<!-- 桌面端专属的 fog.js / overlay.js / debug-panel.js / grid.js /
+     about.js / content.js / script.js 一律不引入——这些要么依赖 #stage
+     那套窗户 DOM 结构，要么是纯桌面调试工具，移动端用不上，引入了也是
+     白白增加加载体积。case-overlay.js 是例外：它完全不依赖 overlay.js/
+     #stage，本来就是按"两种宿主页面各自独立工作"设计的（原来是
+     content.html 独立访问 vs 被 index.html clone 进第一层浮层，现在
+     mobile.html 是第三种），接上就能在这个页面单独工作，不需要先有
+     #overlayBody 或者 fog.js 那套东西 -->
+<script src="case-overlay.js"></script>
 <script src="mobile.js"></script>
 
 </body>

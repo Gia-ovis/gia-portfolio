@@ -9,6 +9,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Monda:wght@500;600&family=Montserrat:wght@500&family=Caveat:wght@400;500;600;700&display=swap" rel="stylesheet">
 <title>Gia Wang - DrayEasy</title>
+<!-- 只在这个文件被直接打开这个退化兜底路径下才会执行——被 case-overlay.js
+     fetch 进第二层浮层时只取 <main>，这个 <head> 不会跟着生效 -->
+<script src="analytics.js"></script>
 </head>
 <body>
 
@@ -21,7 +24,10 @@
 
 <main>
 
-    <img class="case-hero-img" src="assets/images/drayeasy/hero.png" alt="DrayEasy">
+    <picture class="case-hero-picture">
+        <source media="(max-width: 1023px)" srcset="assets/images/drayeasy/hero_mobile.png">
+        <img class="case-hero-img" src="assets/images/drayeasy/hero.png" alt="DrayEasy">
+    </picture>
 
     <div class="case-content">
 
@@ -186,7 +192,7 @@
                         <h4 class="case-before-subtitle">Understand how users actually get a quote</h4>
                         <p class="case-before-desc">I combined <em class="case-em">expert interviews</em>, <em class="case-em">competitive analysis</em>, and <em class="case-em">journey mapping</em> to learn how freight forwarders searched, compared, and moved a quote forward.</p>
                     </div>
-                    <img class="case-before-journey-img" src="assets/images/drayeasy/journey map.png" alt="Journey map of how freight forwarders get a quote">
+                    <img class="case-before-journey-img" src="assets/images/drayeasy/journey map.png" alt="Journey map of how freight forwarders get a quote" data-lightbox>
                 </div>
 
                 <div class="case-before-part case-before-part-2">
@@ -232,7 +238,7 @@
                     <h4 class="case-process-subtitle">Exploring layouts</h4>
                     <p class="case-process-desc">We compared multiple layouts before choosing a top-to-bottom structure that kept key information together and reduced competition with the map.</p>
                 </div>
-                <img class="case-process-layouts-img" src="assets/images/drayeasy/layouts.png" alt="Layout exploration options">
+                <img class="case-process-layouts-img" src="assets/images/drayeasy/layouts.png" alt="Layout exploration options" data-lightbox>
             </div>
 
             <div class="case-process-section case-process-section-2">

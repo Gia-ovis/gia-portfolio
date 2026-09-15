@@ -810,3 +810,181 @@ body {
     line-height: 33px;
     color: var(--text-secondary);
 }
+
+/* ============================================================
+   ≤1023px 响应式——只做这一档，不再细分平板，因为 <1024px 的访客
+   现在全部会被 index.html 的重定向脚本带去 mobile.html，落在这个断点
+   区间里的只有 mobile.html 和窄屏浏览器里的 content.html 独立访问
+   （content.html 本身没有重定向，理论上还是能被窄屏直接打开）。
+
+   env(safe-area-inset-*) 现状说明：这几个页面的 viewport meta 都没有
+   viewport-fit=cover，没开这个的话 env(safe-area-inset-*) 恒为 0——
+   下面公式里的 max(76px, env(safe-area-inset-top) + 52px) 现在实际
+   效果就是恒定 76px，max(16px, env(safe-area-inset-top)) 恒定 16px。
+   公式还是按你给的写法实现（万一以后哪个页面加了 viewport-fit=cover，
+   不用回头改这里），但现状告诉你一声，不是我没做，是这几个数字现在
+   还生效不了 env() 那部分。
+
+   main 的 display:flex 只在 .case-overlay-body 里生效（scoped），不用
+   裸 main 选择器——content.html 自己的 <main>（第一层浮层的内容）也是
+   同一个标签名，如果不加这层限定，理论上有个边缘场景会连带影响到它：
+   用户在 index.html（≥1024px 才能到达，不会被重定向）里同时开着第一层
+   +第二层浮层，然后不刷新页面、直接把浏览器窗口拖窄到 <1024px——
+   index.html 的重定向只在首次加载时判断一次，不监听 resize，这时候
+   两个 <main> 会同时存在于同一个文档里，裸 main 选择器会两个都命中。
+   ============================================================ */
+@media (max-width: 1023px) {
+
+    /* ---- Hero 区：用 display:contents 让 .case-content 原来包着的
+       tag/标题/副标题/分隔线/元信息，从"被包在一个盒子里"变成直接参与
+       main 的 flex 排序——这样才能让视觉顺序变成 tag→标题→副标题→
+       hero图（跟桌面版 hero图在最上面相反），不用真的挪动 DOM 节点。
+       .case-hero-picture 同理需要 display:contents，不然 order 要加在
+       <picture> 上而不是 .case-hero-img 上（<picture> 才是 main 的直接
+       子元素） ---- */
+    .case-overlay-body main {
+        display: flex;
+        flex-direction: column;
+        padding: 0 16px;   /* 内容容器左右各 16px 边距，不再是 1056 居中 */
+    }
+    .case-content,
+    .case-hero-picture {
+        display: contents;
+    }
+
+    .case-tag       { order: 1; }
+    .case-title     { order: 2; }
+    .case-subtitle  { order: 3; }
+    .case-hero-img  { order: 4; }
+    .case-divider   { order: 5; }
+    .case-meta      { order: 6; }
+    .case-problem-band  { order: 7; }
+    .case-workflow       { order: 8; }
+    .case-before-band    { order: 9; }
+    .case-process         { order: 10; }
+    .case-production       { order: 11; }
+    .case-closing            { order: 12; }
+
+    /* Shipped tag 现在是第一个元素，顶部间距用你给的安全区公式，
+       不再是"hero 图底部 → tag 顶部"的 48px（hero 图已经不在它上面了） */
+    .case-tag {
+        margin-top: max(76px, env(safe-area-inset-top) + 52px);
+    }
+
+    .case-title {
+        margin-top: 16px;   /* tag → 标题 */
+        font-size: 32px;
+        line-height: 46px;
+        letter-spacing: -0.02em;
+    }
+
+    .case-subtitle {
+        margin-top: 16px;   /* 标题 → 副标题 */
+        font-weight: 350;
+        font-size: 14px;
+        line-height: 150%;
+        color: var(--text-secondary);
+    }
+
+    /* hero 图不再满宽出血——取消桌面版 calc(100%+48px) 那套负 margin，
+       换成图源（<picture> 里的 <source>）本身就是给手机裁好的
+       hero_mobile.png，不需要再靠 CSS 裁切 */
+    .case-hero-img {
+        width: 100%;
+        margin-left: 0;
+        margin-right: 0;
+        margin-top: 72px;   /* 副标题 → hero 图 */
+        height: auto;
+    }
+
+    /* 元信息行：横向五列改成纵向堆叠（用户在 370px 宽度下更好读——两列
+       网格会让 MY CONTRIBUTION 这种四行内容和它的标签挤在不到一半屏宽
+       里，单列堆叠更稳妥，见对话里的说明） */
+    .case-meta {
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: flex-start;
+        gap: 24px;
+    }
+
+    /* ---- 区块之间的大间距：130/168/250 统一收到 80px ---- */
+    .case-meta          { margin-bottom: 80px; }
+    .case-problem-band  { margin-bottom: 80px; }
+    .case-workflow       { margin-bottom: 80px; }
+    .case-before-band    { margin-bottom: 80px; }
+    .case-process         { margin-bottom: 80px; }
+    .case-production       { margin-bottom: 80px; }
+    .case-closing            { margin-bottom: 80px; }
+
+    /* ---- 蓝色/灰色出血色带：桌面版 calc(100%+48px)/-24px 是按 main
+       的桌面 padding(24px) 算的，main 在这个断点下 padding 已经改成
+       16px，出血量要跟着改成 calc(100%+32px)/-16px，不然色带会比屏幕
+       还宽 16px，两侧各溢出 8px 出去 ---- */
+    .case-problem-band,
+    .case-before-band {
+        width: calc(100% + 32px);
+        margin-left: -16px;
+        margin-right: -16px;
+    }
+
+    /* ---- 小标题：24px 降到 20px（Problem Overview 卡片标题
+       "📌 Problem Overview" 是 16px，不在这次要改的范围内；
+       .case-closing-body 虽然也是 24px，但它是收尾段落正文，不是小
+       标题，按"正文字号保持不变"处理，不降） ---- */
+    .case-improvement-title,
+    .case-before-subtitle,
+    .case-process-subtitle,
+    .case-production-subtitle {
+        font-size: 20px;
+    }
+
+    /* ---- 所有横排双栏改成纵向堆叠，堆叠后每组之间 32px ----
+       Problem Overview 的卡片+图片这组虽然你列的清单里没单独点名，
+       但它本身也是横排双栏，按"所有横排双栏"这条通用原则一并处理了，
+       不是漏看，是归进了"所有"里——如果你想让它保持横排，告诉我单独
+       排除 */
+    .case-problem-inner,
+    .case-improvement-cols,
+    .case-before-flow-row,
+    .case-production-group {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 32px;
+    }
+    .case-problem-card,
+    .case-problem-img,
+    .case-improvement-col,
+    .case-before-flow-img,
+    .case-before-flow-text,
+    .case-production-img,
+    .case-production-text {
+        flex: none;
+        width: 100%;
+    }
+
+    /* ---- Design Process 三张卡片：横排改纵向堆叠，24px 间距，
+       宽度撑满容器 ---- */
+    .case-process-cards {
+        flex-direction: column;
+        gap: 24px;
+    }
+    .case-process-card-1,
+    .case-process-card-2,
+    .case-process-card-3 {
+        flex: none;
+        width: 100%;
+    }
+
+    /* ---- rate request 的 Before/After 两张图：并排改纵向堆叠。
+       你没单独给这组的间距数值，沿用跟上面"横排双栏"同一个 32px，
+       保持全篇堆叠间距统一 ---- */
+    .case-process-rate-group {
+        flex-direction: column;
+        gap: 32px;
+    }
+    .case-process-rate-col-1,
+    .case-process-rate-col-2 {
+        flex: none;
+        width: 100%;
+    }
+}

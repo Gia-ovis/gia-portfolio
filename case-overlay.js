@@ -60,10 +60,88 @@
     document.body.appendChild(scrim);
     document.body.appendChild(panel);
 
+    // ---- 大图点击放大：只在 ≤1023px 生效，匹配任何带 [data-lightbox]
+    // 属性的图片（不是写死 journey map/layouts 这两张，谁标了这个属性
+    // 谁就有这个行为，以后别的 case study 想要同样效果直接加属性即可）。
+    // 放大不做手势缩放——图片全屏铺开后靠浏览器原生的双指缩放（这几个
+    // 页面的 viewport meta 都没有关掉 user-scalable），不引入任何缩放/
+    // 手势相关的代码或第三方库 ----
+    const LIGHTBOX_MOBILE_QUERY = '(max-width: 1023px)';
+
+    const lightbox = document.createElement('div');
+    lightbox.className = 'case-lightbox';
+
+    const lightboxImg = document.createElement('img');
+    lightboxImg.className = 'case-lightbox-img';
+
+    const lightboxClose = document.createElement('button');
+    lightboxClose.type = 'button';
+    lightboxClose.className = 'case-lightbox-close';
+    lightboxClose.setAttribute('aria-label', 'Close image');
+    lightboxClose.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>';
+
+    lightbox.appendChild(lightboxImg);
+    lightbox.appendChild(lightboxClose);
+    document.body.appendChild(lightbox);
+
+    let lightboxOpen = false;
+    function openLightbox(src, alt) {
+        lightboxImg.src = src;
+        lightboxImg.alt = alt || '';
+        lightbox.classList.add('is-open');
+        lightboxOpen = true;
+    }
+    function closeLightbox() {
+        lightbox.classList.remove('is-open');
+        lightboxImg.src = '';   // 清空，不在下次打开前短暂闪上一张旧图，也不占着内存
+        lightboxOpen = false;
+    }
+    lightbox.addEventListener('click', e => {
+        if (e.target === lightbox) closeLightbox();   // 点图片本身不关，点空白背景才关
+    });
+    lightboxClose.addEventListener('click', closeLightbox);
+
+    document.addEventListener('click', e => {
+        const img = e.target.closest('[data-lightbox]');
+        if (!img) return;
+        if (!window.matchMedia(LIGHTBOX_MOBILE_QUERY).matches) return;   // 桌面端点击不放大，原样保留现有行为
+        openLightbox(img.currentSrc || img.src, img.alt);
+    });
+
+    // 必须排在下面第二层浮层自己的 Escape 监听器前面注册——原因跟
+    // case-overlay.js 需要排在 overlay.js 前面是同一个道理：先注册的
+    // 先跑，这样图片放大着的时候按 Escape 只关图片，不会因为下面那个
+    // 监听器也在监听同一个按键而连带把第二层浮层也关掉
+    document.addEventListener('keydown', e => {
+        if (e.key !== 'Escape' || !lightboxOpen) return;
+        e.stopImmediatePropagation();
+        closeLightbox();
+    });
+
     let isOpen = false;
     let currentKey = null;
     let firstLayerScrollTop = null;
     const mainPromiseCache = {};   // 按 caseKey 分别缓存，跟 overlay.js 的 mainPromise 同一个思路
+
+    // 埋点：case_study_scroll 滚动深度，25/50/75/100 各上报一次，每次
+    // 重新打开重置——不是重新创建监听器，panelBody 这个元素本身是单例、
+    // 常驻的（跟整个壳子一样只建一次），监听器只挂一次，靠清空这个
+    // Set 达到"重新打开时重置"的效果，不用每次 open/close 都增删监听器
+    const SCROLL_DEPTH_THRESHOLDS = [25, 50, 75, 100];
+    let scrollDepthFired = new Set();
+    function checkScrollDepth() {
+        if (!currentKey || !panelBody.scrollHeight) return;
+        // 内容如果整个装得下、不需要滚动，scrollTop 恒为 0，公式算出来
+        // 正好是 100%——不需要另外判断"装得下就直接算看完"，数学上自然成立
+        const percent = ((panelBody.scrollTop + panelBody.clientHeight) / panelBody.scrollHeight) * 100;
+        SCROLL_DEPTH_THRESHOLDS.forEach(depth => {
+            if (percent >= depth && !scrollDepthFired.has(depth)) {
+                scrollDepthFired.add(depth);
+                if (window.trackEvent) window.trackEvent('case_study_scroll', { case: currentKey, depth: depth });
+            }
+        });
+    }
+    panelBody.addEventListener('scroll', checkScrollDepth);
 
     function loadCaseMain(key) {
         const entry = CASE_STUDIES[key];
@@ -117,20 +195,24 @@
         else document.documentElement.style.overflow = '';
     }
 
-    // 地址栏要准确反映"实际在看哪个页面"，不能不分场景写死同一个文件名：
-    // 独立访问 content.html 时写 content.html?case=xxx，被 index.html
-    // clone 进第一层浮层时写 index.html?case=xxx——用跟滚动位置记录同一个
-    // #overlayBody 存在性判断，两边各自准确
-    function isOnIndexHtml() {
-        return !!getFirstLayerScrollEl();
+    // 地址栏要准确反映"实际在看哪个页面"——不管宿主是 index.html、
+    // content.html 还是 mobile.html，location.pathname 本身已经是准确的
+    // （clone 进第一层浮层不会改变浏览器地址栏，只有真正的页面导航才会），
+    // 直接取当前路径的文件名当目标就行，不需要为每个宿主页面单独判断。
+    // 之前这里是 isOnIndexHtml() ? 'index.html' : 'content.html' 的二选一，
+    // 接入 mobile.html 之后二选一不够用了（mobile.html 场景下会被误判成
+    // content.html），改成直接读当前文件名，顺便也不用再维护"支持哪几个
+    // 宿主页面"这张隐式列表
+    function currentPageName() {
+        const path = location.pathname;
+        const base = path.substring(path.lastIndexOf('/') + 1);
+        return base || 'index.html';   // 路径以 "/" 结尾、没有具体文件名时的兜底，理论上用不到
     }
     function buildCaseUrl(key) {
-        const target = isOnIndexHtml() ? 'index.html' : 'content.html';
-        return new URL(target + '?case=' + encodeURIComponent(key), location.href).toString();
+        return new URL(currentPageName() + '?case=' + encodeURIComponent(key), location.href).toString();
     }
     function buildClosedUrl() {
-        const target = isOnIndexHtml() ? 'index.html' : 'content.html';
-        return new URL(target, location.href).toString();
+        return new URL(currentPageName(), location.href).toString();
     }
 
     function openCaseOverlay(key, opts) {
@@ -173,6 +255,18 @@
             panelBody.scrollTop = 0;
             isOpen = true;
             currentKey = key;
+
+            // 埋点：滚动深度这个 Set 在这里重置，不是在 closeCaseOverlay
+            // 里——"重新打开时重置"直接对应"每次成功打开都拿到一个全新的
+            // 空 Set"，语义上更直接，也避免关闭动画播放期间万一被重新
+            // 打开（见 closeCaseOverlay 的 finishClose 里同类判断）导致
+            // 重置时机搞混
+            scrollDepthFired = new Set();
+            checkScrollDepth();   // 内容如果本来就不需要滚动，这里会立刻把 100% 那档报掉
+
+            if (window.trackEvent) {
+                window.trackEvent('open_case_study', { case: key, source: opts.source || 'click' });
+            }
 
             // 把焦点挪进新打开的面板——role="dialog" aria-modal="true"
             // 的语义要求焦点跟着过来，键盘/屏幕阅读器用户不应该还停留在
@@ -278,7 +372,7 @@
             if (typeof window.openContentOverlay === 'function') {
                 window.openContentOverlay('work');
             }
-            if (!isOpen || currentKey !== key) openCaseOverlay(key, { updateUrl: false });
+            if (!isOpen || currentKey !== key) openCaseOverlay(key, { updateUrl: false, source: 'direct_link' });
         } else if (isOpen) {
             closeCaseOverlay({ updateUrl: false });
         }
@@ -299,7 +393,7 @@
         const key = trigger.getAttribute('data-case-study');
         if (!CASE_STUDIES[key]) return;
         e.preventDefault();
-        openCaseOverlay(key);
+        openCaseOverlay(key, { source: 'click' });
     });
 
     window.openCaseOverlay = openCaseOverlay;
