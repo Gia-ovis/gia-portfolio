@@ -120,6 +120,9 @@
         panel.classList.add('is-visible');
         isOpen = true;
 
+        // 埋点：只加这一行上报调用，不改动上面任何定位/展示逻辑
+        if (window.trackEvent) window.trackEvent('open_section', { section: key, method: 'click' });
+
         // 三个入口各自明确的定位规则，不再共用同一套 scrollIntoView 贴顶
         // 逻辑(之前 Sandbox/About 走的是同一个 target.scrollIntoView({
         // block:'start'})，视觉效果不理想，这次分开处理)：
@@ -256,11 +259,24 @@
         const comingSoonTeardown = window.initComingSoonModal
             ? window.initComingSoonModal(document)
             : null;
+        // 埋点：view_section 的 IntersectionObserver，同一个 initX→destroy
+        // 模式，每次重新打开浮层都拿到全新的已上报集合——这就是"浮层关闭
+        // 再打开时重置"的实现方式，不是靠监听 close 事件清空
+        const sectionAnalyticsTeardown = window.initSectionAnalytics
+            ? window.initSectionAnalytics(document)
+            : null;
+        // 埋点：About 4 张卡片的 view_about_item，跟上面 sectionAnalyticsTeardown
+        // 同一套模式、同一个原因——重新打开浮层拿到全新的已上报集合
+        const aboutItemAnalyticsTeardown = window.initAboutItemAnalytics
+            ? window.initAboutItemAnalytics(document)
+            : null;
         currentTeardown = () => {
             scrollSpyTeardown();
             if (hoverCapsuleTeardown) hoverCapsuleTeardown();
             if (aboutTeardown) aboutTeardown();
             if (comingSoonTeardown) comingSoonTeardown();
+            if (sectionAnalyticsTeardown) sectionAnalyticsTeardown();
+            if (aboutItemAnalyticsTeardown) aboutItemAnalyticsTeardown();
         };
     }
 

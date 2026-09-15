@@ -10,6 +10,10 @@
      里，理由跟 index.html 同一条注释——见那边 -->
 <link href="https://fonts.googleapis.com/css2?family=Monda:wght@500;600&family=Montserrat:wght@500&family=Caveat:wght@400;500;600;700&display=swap" rel="stylesheet">
 <title>Gia Wang - Product Designer</title>
+<!-- 只在独立访问 content.html 时会真正执行——被 overlay.js fetch 进
+     index.html 的浮层时只取 <main>，这个 <head> 里的东西不会跟着生效，
+     index.html 自己的 <head> 已经单独加了一份 -->
+<script src="analytics.js"></script>
 </head>
 <body>
 
@@ -255,7 +259,7 @@
                          装饰字+手写风格 info 卡在下面。装饰字/info 卡都是
                          绝对定位、按"相对图片左上角"的坐标摆的，坐标细节见
                          content.css -->
-                    <article class="about-card about-card--me">
+                    <article class="about-card about-card--me" data-about-item="about-me">
                         <div class="about-me-text">
                             <h2 class="about-card-title">A little more about me</h2>
                             <p class="about-card-body">I studied psychology before finding my way into HCI and design, with a curiosity about how people perceive and interact with the world.</p>
@@ -308,19 +312,19 @@
                          .text-brand（Brand 蓝），没有另外新建一个 .link 类——
                          同一个视觉效果没必要维护两份。链接目的地还没定，先用
                          href="#" 占位，跟"View Case Study"那些按钮一个惯例 -->
-                    <article class="about-card about-card--2">
+                    <article class="about-card about-card--2" data-about-item="game-design">
                         <h2 class="about-card-title">I have a soft spot for game design</h2>
                         <p class="about-card-body">As a Game Design TA, I got to think about interaction through mechanics, narrative, player behavior, and sound. I even gave a talk on one of my favorite rabbit holes: interactive music.</p>
                         <img class="about-section-photo" src="assets/images/about/game design lecture.png" width="471.75" height="374" alt="Giving a talk on interactive music in game design">
                     </article>
 
-                    <article class="about-card about-card--3">
+                    <article class="about-card about-card--3" data-about-item="physical-interaction">
                         <h2 class="about-card-title">I’m drawn to interactions I can touch</h2>
                         <p class="about-card-body">I like making things I can actually touch and play with. That’s taken me from breadboards and sensors to physical prototypes, and eventually built my own synth, Granular Stone.</a></p>
                         <img class="about-section-photo" src="assets/images/about/hardwares.png" width="442" height="459.85" alt="Synth and interactive music hardware experiments">
                     </article>
 
-                    <article class="about-card about-card--4">
+                    <article class="about-card about-card--4" data-about-item="music">
                         <h2 class="about-card-title">Making music gives me ideas for design</h2>
                         <p class="about-card-body">I usually end up getting curious about the tools, too. I start wondering what else they could do, and how different ways of working with them might lead to different sounds, ideas, or unexpected results.</p>
                         <img class="about-section-photo" src="assets/images/about/music.png" width="487.05" height="431.57" alt="Music production, guitars, and outdoor synth playing">

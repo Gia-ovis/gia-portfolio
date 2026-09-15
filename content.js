@@ -205,6 +205,88 @@
         return !!(scrim && scrim.classList.contains('is-visible'));
     };
 
+    /* ------------------------------------------------------------
+       埋点：#work/#sandbox/#about 三个区块进入视口超过 50% 时上报一次
+       view_section。跟 initContentScrollSpy 是同一个 initX(root)→destroy()
+       模式——独立页面加载一次；overlay.js 每次重新打开浮层要重新调用，
+       这就是"浮层关闭再打开时重置"的来源：每次 openOverlay 调用这个
+       函数都会拿到一个全新的、空的已上报集合，不是靠监听关闭事件去清空。
+
+       用 IntersectionObserver 而不是 scroll 事件算位置——这三个 section
+       在 content.html 独立访问时是原生纵向滚动，在浮层里滚动的是
+       #overlayBody，两种场景下"谁在滚"不一样，但 IntersectionObserver
+       不需要关心这件事，它只看目标元素和裁切它的祖先链（包括
+       #overlayBody 的 overflow-y:auto）之间的相交比例，两边天然通用，
+       不用像滚动位置计算那样分场景处理。
+       ------------------------------------------------------------ */
+    function initSectionAnalytics(root) {
+        root = root || document;
+        const ids = ['work', 'sandbox', 'about'];
+        const targets = ids
+            .map(id => root.querySelector('#' + id))
+            .filter(Boolean);
+        if (!targets.length) return function destroy() {};
+
+        const reported = new Set();
+        const observer = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (!entry.isIntersecting || entry.intersectionRatio < 0.5) return;
+                const id = entry.target.id;
+                if (reported.has(id)) return;
+                reported.add(id);
+                if (window.trackEvent) window.trackEvent('view_section', { section: id });
+            });
+        }, { threshold: 0.5 });
+
+        targets.forEach(t => observer.observe(t));
+
+        return function destroy() {
+            observer.disconnect();
+        };
+    }
+    window.initSectionAnalytics = initSectionAnalytics;
+
+    /* ------------------------------------------------------------
+       埋点：About 里 4 张卡片进入视口超过 50% 时上报一次 view_about_item。
+       跟 initSectionAnalytics 是完全同一套写法（同一个 initX(root)→
+       destroy() 模式、同一个"重新打开浮层=拿到全新已上报集合"的重置
+       方式），只是监听目标换成了 [data-about-item] 这 4 张 <article>，
+       上报的 item 参数直接读这个属性的值（语义化标识，不是拿
+       .about-card--2/--3/--4 这种 class 后缀去解析——那样以后卡片顺序/
+       命名一变，上报出去的历史数据含义就跟着变了，属性值本身不会跟着
+       class 走）。
+
+       跟 initSectionAnalytics 一样不需要关心"谁在滚"——独立页面是原生
+       纵向滚动，浮层里是 #overlayBody；这 4 张卡片额外还有一层
+       about.js 的横向 scroll-jacking（.about-track 的 transform:
+       translateX 位移），IntersectionObserver 一样不需要特殊处理，
+       因为 .about-sticky 有 overflow:hidden，规范里"沿裁切祖先链计算
+       相交比例"这条本来就会把这层横向裁切算进去，不需要显式指定 root。
+       ------------------------------------------------------------ */
+    function initAboutItemAnalytics(root) {
+        root = root || document;
+        const targets = Array.from(root.querySelectorAll('[data-about-item]'));
+        if (!targets.length) return function destroy() {};
+
+        const reported = new Set();
+        const observer = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (!entry.isIntersecting || entry.intersectionRatio < 0.5) return;
+                const item = entry.target.getAttribute('data-about-item');
+                if (reported.has(item)) return;
+                reported.add(item);
+                if (window.trackEvent) window.trackEvent('view_about_item', { item: item });
+            });
+        }, { threshold: 0.5 });
+
+        targets.forEach(t => observer.observe(t));
+
+        return function destroy() {
+            observer.disconnect();
+        };
+    }
+    window.initAboutItemAnalytics = initAboutItemAnalytics;
+
     // 这个文件现在同时被 content.html 和 index.html 引入（后者是为了让
     // overlay.js 能调用 window.initContentScrollSpy）。index.html 页面
     // 刚加载时压根没有 .banner-section-title 这个元素——要等浮层打开、
@@ -220,6 +302,12 @@
         }
         if (document.querySelector('[data-case-study-ready="false"]')) {
             initComingSoonModal(document);
+        }
+        if (document.querySelector('#work')) {
+            initSectionAnalytics(document);
+        }
+        if (document.querySelector('[data-about-item]')) {
+            initAboutItemAnalytics(document);
         }
     }
     if (document.readyState === 'loading') {

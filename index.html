@@ -19,6 +19,12 @@
             location.replace('mobile.html' + location.search);
         }
     </script>
+    <!-- analytics.js 放在移动端跳转判断之后——窄屏访客这一刻已经在被
+         location.replace 带去 mobile.html 的路上，不应该先在 index.html
+         这边也初始化一次 gtag、多算一次 page_view，mobile.html 自己的
+         <head> 会再加载一次 analytics.js，两边都跑的话同一次访问会被
+         计成两次 page_view -->
+    <script src="analytics.js"></script>
     <link rel="stylesheet" href="style.css">
     <!-- content.css 是 Work/Play/About 浮层内容（banner、001 编号、项目卡片
          这套排版）的样式，overlay.js 会把 content.html 里对应的 section
