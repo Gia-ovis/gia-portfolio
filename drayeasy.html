@@ -43,25 +43,37 @@
         <div class="case-divider"></div>
 
         <div class="case-meta">
-            <div class="case-meta-col">
-                <span class="case-meta-label">ROLE</span>
-                <span class="case-meta-value">UX Designer</span>
+            <!-- 手机端要把这 5 列重新分组成"ROLE+TEAM 一行 / TIMELINE+
+                 OUTCOME 一行 / MY CONTRIBUTION 单独一行"，DOM 顺序因此
+                 改成 ROLE,TEAM,TIMELINE,OUTCOME,CONTRIB（用 .case-meta-group
+                 包住每一对），桌面端靠 .case-meta-col-* 上的 order 把
+                 视觉顺序退回原样（ROLE,CONTRIBUTION,TEAM,TIMELINE,
+                 OUTCOME），配合 .case-meta-group 在桌面端是 display:contents
+                 （不产生自己的盒子），桌面端效果跟改之前完全一样，只有
+                 手机端断点内会真的按分组两两并排 -->
+            <div class="case-meta-group">
+                <div class="case-meta-col case-meta-col-role">
+                    <span class="case-meta-label">ROLE</span>
+                    <span class="case-meta-value">UX Designer</span>
+                </div>
+                <div class="case-meta-col case-meta-col-team">
+                    <span class="case-meta-label">TEAM</span>
+                    <span class="case-meta-value">6 UX designers<br>1 PM + engineering</span>
+                </div>
             </div>
-            <div class="case-meta-col">
+            <div class="case-meta-group">
+                <div class="case-meta-col case-meta-col-timeline">
+                    <span class="case-meta-label">TIMELINE</span>
+                    <span class="case-meta-value">Feb - May 2023</span>
+                </div>
+                <div class="case-meta-col case-meta-col-outcome">
+                    <span class="case-meta-label">OUTCOME</span>
+                    <span class="case-meta-value">Shipped in 2023<br>Still live today</span>
+                </div>
+            </div>
+            <div class="case-meta-col case-meta-col-contrib">
                 <span class="case-meta-label">MY CONTRIBUTION</span>
                 <span class="case-meta-value">Domain research<br>Journey mapping<br>Workflow restructuring<br>Wireframe iteration</span>
-            </div>
-            <div class="case-meta-col">
-                <span class="case-meta-label">TEAM</span>
-                <span class="case-meta-value">6 UX designers<br>1 PM + engineering</span>
-            </div>
-            <div class="case-meta-col">
-                <span class="case-meta-label">TIMELINE</span>
-                <span class="case-meta-value">Feb - May 2023</span>
-            </div>
-            <div class="case-meta-col">
-                <span class="case-meta-label">OUTCOME</span>
-                <span class="case-meta-value">Shipped in 2023<br>Still live today</span>
             </div>
         </div>
 
@@ -250,15 +262,15 @@
                 <div class="case-process-cards">
                     <div class="case-process-card case-process-card-1">
                         <p class="case-process-card-title">Search input iterations</p>
-                        <img class="case-process-card-img" src="assets/images/drayeasy/search inputs_iterations.png" alt="Search input iterations">
+                        <img class="case-process-card-img" src="assets/images/drayeasy/search inputs_iterations.png" alt="Search input iterations" data-lightbox>
                     </div>
                     <div class="case-process-card case-process-card-2">
                         <p class="case-process-card-title">Map iterations</p>
-                        <img class="case-process-card-img" src="assets/images/drayeasy/map_iterations.png" alt="Map iterations">
+                        <img class="case-process-card-img" src="assets/images/drayeasy/map_iterations.png" alt="Map iterations" data-lightbox>
                     </div>
                     <div class="case-process-card case-process-card-3">
                         <p class="case-process-card-title">Cargo type iterations</p>
-                        <img class="case-process-card-img" src="assets/images/drayeasy/cargo type_iterations.png" alt="Cargo type iterations">
+                        <img class="case-process-card-img" src="assets/images/drayeasy/cargo type_iterations.png" alt="Cargo type iterations" data-lightbox>
                     </div>
                 </div>
             </div>

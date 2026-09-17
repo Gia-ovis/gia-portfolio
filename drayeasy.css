@@ -130,6 +130,21 @@ body {
     color: var(--text-primary);
 }
 
+/* .case-meta-group 只在手机端有意义（真正的两列并排容器）——桌面端
+   display:contents 让它从盒子树里消失，.case-meta 的 flex 子元素直接
+   变成里面那 5 个 .case-meta-col（DOM 顺序现在是 ROLE,TEAM,TIMELINE,
+   OUTCOME,CONTRIB，为了手机端分组才这样排的），用下面这组 order 把
+   桌面端的视觉顺序退回原来的 ROLE,CONTRIBUTION,TEAM,TIMELINE,OUTCOME，
+   桌面端效果因此跟改之前完全一样 */
+.case-meta-group {
+    display: contents;
+}
+.case-meta-col-role     { order: 1; }
+.case-meta-col-contrib  { order: 2; }
+.case-meta-col-team     { order: 3; }
+.case-meta-col-timeline { order: 4; }
+.case-meta-col-outcome  { order: 5; }
+
 /* ============================================================
    Problem Overview 区块
    ============================================================ */
@@ -146,7 +161,14 @@ body {
     margin-bottom: 168px;   /* Problem Overview 区块 → 下一个区块 */
 
     background: var(--bg-blue);
-    padding: 64px 0;
+    /* 左右 24px 是修复对齐用的——全站 box-sizing:border-box（见
+       content.css 的 * 重置），这里的 width:calc(100%+48px) 声明的是
+       border-box 宽度，加 padding 不会改变出血出来的可见宽度（背景照样
+       铺满到这个宽度），只是把 .case-problem-inner 这个 max-width:1056px
+       的内容区往里收 24px，不再贴着出血边缘——跟 main 给其它非出血区块
+       （.case-workflow 等）天然带的 24px 边距是同一个数值，只是这里要
+       显式补上，因为出血本来就是用来逃开 main 的 padding 的 */
+    padding: 64px 24px;
 }
 
 /* 背景带内部的实际内容再收回 1056px 居中，左栏卡片固定 317px、右栏图
@@ -159,12 +181,13 @@ body {
     display: flex;
     flex-direction: row;
     align-items: flex-start;
-    justify-content: space-between;
+    gap: 32px;   /* 固定间距，不靠 justify-content:space-between——那样窄屏下两栏
+                    宽度不够时会先把 gap 压缩到 0，卡片和图片会贴在一起 */
 }
 
 .case-problem-card {
     box-sizing: border-box;
-    width: 317px;
+    flex: 0 0 317px;   /* 固定宽度，不参与伸缩——窄屏时只应该是右边的图片变窄 */
     padding: 16px;
 
     background: var(--bg-reading);
@@ -210,7 +233,8 @@ body {
 }
 
 .case-problem-img {
-    width: 706px;
+    flex: 1 1 auto;   /* 吸收剩余空间——窄屏时只缩小图片，不挤压左边固定宽度的卡片 */
+    min-width: 0;   /* 允许在 flex 里正常缩小，不被图片原始内在尺寸撑爆 */
     height: auto;
     border-radius: 12px;
     filter:
@@ -389,7 +413,10 @@ body {
     margin-bottom: 168px;   /* 区块本身 → 下一个区块，跟前面几个区块一致 */
 
     background: #F5F5F5;   /* content.css 的 :root 里没有这个颜色，直接写十六进制 */
-    padding: 84px 0;
+    /* 左右 24px，跟 .case-problem-band 同一个对齐修复、同一个原因——
+       出血宽度本身不变（border-box + calc(100%+48px)），只是把内容区
+       往里收，不再贴着出血边缘 */
+    padding: 84px 24px;
 }
 
 .case-before-inner {
@@ -866,9 +893,21 @@ body {
     .case-closing            { order: 12; }
 
     /* Shipped tag 现在是第一个元素，顶部间距用你给的安全区公式，
-       不再是"hero 图底部 → tag 顶部"的 48px（hero 图已经不在它上面了） */
+       不再是"hero 图底部 → tag 顶部"的 48px（hero 图已经不在它上面了）。
+
+       撑满整行的根因：.case-content 在这个断点下是 display:contents，
+       .case-tag 因此变成 .case-overlay-body main（display:flex;
+       flex-direction:column）的直接 flex 子元素——main 没有设
+       align-items，默认值 stretch 会把交叉轴（这里是宽度）拉伸到跟
+       容器一样宽，跟 .case-tag 自己是 display:inline-flex 没关系
+       （那个只管它自己内部 dot+文字怎么排，不管它作为别人的 flex 子项
+       时怎么被撑）。align-self:flex-start 让这一个元素单独跳出 main
+       的默认 stretch，回到跟着内容走的宽度 */
     .case-tag {
         margin-top: max(76px, env(safe-area-inset-top) + 52px);
+        display: inline-flex;
+        width: auto;
+        align-self: flex-start;
     }
 
     .case-title {
@@ -893,18 +932,50 @@ body {
         width: 100%;
         margin-left: 0;
         margin-right: 0;
-        margin-top: 72px;   /* 副标题 → hero 图 */
+        margin-top: 48px;   /* 副标题 → hero 图，原来是 72px，这轮统一收到 48px */
         height: auto;
     }
 
-    /* 元信息行：横向五列改成纵向堆叠（用户在 370px 宽度下更好读——两列
-       网格会让 MY CONTRIBUTION 这种四行内容和它的标签挤在不到一半屏宽
-       里，单列堆叠更稳妥，见对话里的说明） */
+    /* 分隔线：桌面版 118px（副标题→分隔线）在这个断点下没有被覆盖过，
+       现在顺序已经变成"hero 图→分隔线"，这次改成 72px */
+    .case-divider {
+        margin-top: 72px;
+    }
+
+    /* 元信息行容器：整体左侧多留 32px（右侧不额外加），内部三组之间
+       24px——分组结构见 drayeasy.html 的 .case-meta-group 注释 */
     .case-meta {
         flex-direction: column;
         justify-content: flex-start;
-        align-items: flex-start;
+        align-items: stretch;   /* 让每组/单列撑满容器宽度，配合下面每组自己的 space-between */
         gap: 24px;
+        margin-top: 36px;   /* 分隔线 → 元信息行，桌面端本来就是这个数字，这里显式写一遍 */
+        padding-left: 32px;
+        padding-right: 0;
+    }
+    /* 桌面端 .case-meta-group 是 display:contents，手机端这里改回真正的
+       flex 容器，两列各自 flex:1、space-between 分布 */
+    .case-meta-group {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: flex-start;
+    }
+    /* 桌面端用来把视觉顺序退回原样的 order，手机端不需要——DOM 顺序
+       本来就已经是想要的显示顺序（ROLE,TEAM,TIMELINE,OUTCOME,CONTRIB），
+       重置回 0 避免桌面端那套 order 在这里也生效 */
+    .case-meta-col-role,
+    .case-meta-col-contrib,
+    .case-meta-col-team,
+    .case-meta-col-timeline,
+    .case-meta-col-outcome {
+        order: 0;
+    }
+    .case-meta-col-role,
+    .case-meta-col-team,
+    .case-meta-col-timeline,
+    .case-meta-col-outcome {
+        flex: 1;
     }
 
     /* ---- 区块之间的大间距：130/168/250 统一收到 80px ---- */
@@ -919,12 +990,15 @@ body {
     /* ---- 蓝色/灰色出血色带：桌面版 calc(100%+48px)/-24px 是按 main
        的桌面 padding(24px) 算的，main 在这个断点下 padding 已经改成
        16px，出血量要跟着改成 calc(100%+32px)/-16px，不然色带会比屏幕
-       还宽 16px，两侧各溢出 8px 出去 ---- */
+       还宽 16px，两侧各溢出 8px 出去。左右 padding 同理从桌面版的 24px
+       降到 16px，跟 hero 区的内容边距一致，不然内容还是会贴着出血边缘 ---- */
     .case-problem-band,
     .case-before-band {
         width: calc(100% + 32px);
         margin-left: -16px;
         margin-right: -16px;
+        padding-left: 16px;
+        padding-right: 16px;
     }
 
     /* ---- 小标题：24px 降到 20px（Problem Overview 卡片标题
@@ -935,7 +1009,60 @@ body {
     .case-before-subtitle,
     .case-process-subtitle,
     .case-production-subtitle {
+        font-size: 16px;
+        line-height: 22px;
+    }
+
+    /* ---- 区块大标题：整层级再降一档，20px/28px（上一轮先降到过
+       24px/33px，这次继续往下） ---- */
+    .case-workflow-title,
+    .case-before-title,
+    .case-process-title,
+    .case-production-title,
+    .case-closing-title {
         font-size: 20px;
+        line-height: 28px;
+    }
+
+    /* ---- 原本 16px/22px/500 的标签类文字，整层降到 14px/500/150%。
+       按数值找，不按名字找——除了你点名的 Problem:/Solution:/Before/
+       After，还有两张卡片自己的小标题("📌 Problem Overview"、
+       "🔎 Usability testing")和 rate request 那组的 Before/After
+       标签，数值上都是同一档 16px/22px/500，一并处理；.case-subtitle
+       虽然桌面端也是 16px，但手机端已经单独降到 14px 了，不在这个
+       范围内，跳过 ---- */
+    .case-problem-card-title,
+    .case-improvement-label,
+    .case-before-flow-label,
+    .case-process-rate-label,
+    .case-production-card-title {
+        font-size: 14px;
+        font-weight: 500;
+        line-height: 150%;
+    }
+
+    /* ---- 原本 14px/500 的正文类文字，字重降到 350（字号/行高不变）。
+       同样按数值找：.case-meta-value（元信息的内容，不是你说的 12px
+       标签那个）和 .case-problem-card-body ol（数字列表，桌面端故意
+       保持比 <p> 重一档的 500 做对比，这次一起降）都命中这一档，如果
+       这两处不是你想改的，告诉我单独排除 ---- */
+    .case-meta-value,
+    .case-problem-card-body ol {
+        font-weight: 350;
+    }
+
+    /* ---- 大间距整体下降：72px 收到 48px，108px 收到 72px。
+       .case-hero-img 的 72px 已经在上面单独改过了，这里是其余几处 ---- */
+    .case-workflow,
+    .case-before-inner,
+    .case-process,
+    .case-production {
+        gap: 48px;
+    }
+    .case-improvements,
+    .case-before-list,
+    .case-process-list {
+        gap: 72px;
     }
 
     /* ---- 所有横排双栏改成纵向堆叠，堆叠后每组之间 32px ----
@@ -961,18 +1088,34 @@ body {
         flex: none;
         width: 100%;
     }
+    /* From Prototype to Production 这两组堆叠顺序对调：文字在上、图在
+       下——DOM 里图片在前、文字在后，column-reverse 只反转视觉顺序，
+       不用改 HTML。上面那条共享规则已经把 flex-direction 设成
+       column，这里用同一个选择器、更晚声明，覆盖成 column-reverse */
+    .case-production-group {
+        flex-direction: column-reverse;
+    }
 
-    /* ---- Design Process 三张卡片：横排改纵向堆叠，24px 间距，
-       宽度撑满容器 ---- */
+    /* ---- Design Process 三张卡片：手机上保持一排（不覆盖
+       flex-direction，沿用桌面版的 row），靠原有的 flex-grow 比例
+       （348/316/227）整体按比例收缩，只缩小卡片自己的 padding/内部
+       间距/标题字号，外层 gap 收到 8px。这几张图本来就是"一眼扫过"
+       性质的缩略图，内容看不清没关系，想细看有 lightbox 点击放大
+       （见 drayeasy.html 的 data-lightbox） ---- */
     .case-process-cards {
-        flex-direction: column;
-        gap: 24px;
+        gap: 8px;
+    }
+    .case-process-card {
+        padding: 8px;
     }
     .case-process-card-1,
     .case-process-card-2,
     .case-process-card-3 {
-        flex: none;
-        width: 100%;
+        gap: 6px;
+    }
+    .case-process-card-title {
+        font-size: 9px;
+        line-height: 12px;
     }
 
     /* ---- rate request 的 Before/After 两张图：并排改纵向堆叠。
@@ -986,5 +1129,15 @@ body {
     .case-process-rate-col-2 {
         flex: none;
         width: 100%;
+    }
+
+    /* ---- 收尾段落："Complex workflows shouldn't..." 从 Title 2(24px)
+       降级成 Text medium，颜色维持现有的 --text-secondary 不变。
+       字重这次又从 500 降到 350，跟这轮"14px/500→14px/350"那条正文
+       降级规则是同一档，归到一起改 ---- */
+    .case-closing-body {
+        font-size: 14px;
+        font-weight: 350;
+        line-height: 150%;
     }
 }
