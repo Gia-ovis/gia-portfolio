@@ -103,10 +103,13 @@ body {
 /* 元信息行 */
 .case-meta {
     margin-top: 36px;   /* 分隔线 → 元信息行 */
-    margin-bottom: 130px;   /* 元信息行 → Problem Overview 区块，靠 margin
+    margin-bottom: 168px;   /* 元信息行 → 新插入的 .case-impact 区块，靠 margin
                                 collapse 穿过 .case-content（自己没有
-                                padding/border）体现在它和下面 .case-problem-band
-                                之间，不需要额外处理 */
+                                padding/border）体现在它和下面 .case-impact
+                                之间。原来是 130px（那时候后面直接接的是
+                                Problem Overview），现在中间插了新区块，
+                                改成跟新区块"上下都 168px"的要求一致，不需要
+                                额外处理 */
     display: flex;
     flex-direction: row;
     justify-content: space-between;
@@ -144,6 +147,83 @@ body {
 .case-meta-col-team     { order: 3; }
 .case-meta-col-timeline { order: 4; }
 .case-meta-col-outcome  { order: 5; }
+
+/* ============================================================
+   Built with PM and engineering 区块——白色背景，不是色带，1056px
+   居中，跟 .case-workflow/.case-process 这些区块同一个道理，不需要
+   calc(100%+48px) 出血手法。上下都留 168px：上方靠 .case-meta 的
+   margin-bottom（这次从 130px 改成了 168px，因为中间插了这个新区块），
+   下方是这个区块自己的 margin-bottom
+   ============================================================ */
+.case-impact {
+    max-width: 1056px;
+    margin: 0 auto;
+    margin-bottom: 168px;
+
+    background: #fff;
+
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 36px;
+}
+
+/* align-items:flex-start 的父级不会自动拉伸子元素到容器宽度，这里
+   显式给 100%——跟 .case-improvements 等其它区块同一个原因 */
+.case-impact-text {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+.case-impact-title {
+    font-family: var(--font-avenir);
+    font-weight: 500;
+    font-size: 24px;
+    line-height: 33px;
+    color: var(--brand);
+}
+.case-impact-body {
+    font-family: var(--font-avenir);
+    font-weight: 350;
+    font-size: 14px;
+    line-height: 150%;
+    color: var(--text-secondary);
+}
+
+.case-impact-media {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+.case-impact-img {
+    width: 100%;
+    height: auto;
+    border: 0.5px solid var(--stroke);
+    border-radius: 12px;
+    filter: drop-shadow(0px 0px 24px rgba(0, 0, 0, 0.06));
+}
+.case-impact-caption {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+}
+/* 竖线跟着文字的高度走，不写死一个数值——align-self:stretch 让它在
+   flex 行内跟旁边的文字一样高 */
+.case-impact-caption-bar {
+    width: 6px;
+    align-self: stretch;
+    background: var(--bg-grey);
+}
+.case-impact-caption-text {
+    font-family: var(--font-avenir);
+    font-weight: 350;
+    font-size: 16px;
+    line-height: 150%;
+    color: var(--text-primary);
+}
 
 /* ============================================================
    Problem Overview 区块
@@ -885,12 +965,13 @@ body {
     .case-hero-img  { order: 4; }
     .case-divider   { order: 5; }
     .case-meta      { order: 6; }
-    .case-problem-band  { order: 7; }
-    .case-workflow       { order: 8; }
-    .case-before-band    { order: 9; }
-    .case-process         { order: 10; }
-    .case-production       { order: 11; }
-    .case-closing            { order: 12; }
+    .case-impact         { order: 7; }
+    .case-problem-band    { order: 8; }
+    .case-workflow         { order: 9; }
+    .case-before-band       { order: 10; }
+    .case-process             { order: 11; }
+    .case-production           { order: 12; }
+    .case-closing                { order: 13; }
 
     /* Shipped tag 现在是第一个元素，顶部间距用你给的安全区公式，
        不再是"hero 图底部 → tag 顶部"的 48px（hero 图已经不在它上面了）。
@@ -937,9 +1018,10 @@ body {
     }
 
     /* 分隔线：桌面版 118px（副标题→分隔线）在这个断点下没有被覆盖过，
-       现在顺序已经变成"hero 图→分隔线"，这次改成 72px */
+       现在顺序已经变成"hero 图→分隔线"，上一轮先改成过 72px，这次
+       再调到 100px */
     .case-divider {
-        margin-top: 72px;
+        margin-top: 100px;
     }
 
     /* 元信息行容器：整体左侧多留 32px（右侧不额外加），内部三组之间
@@ -978,14 +1060,17 @@ body {
         flex: 1;
     }
 
-    /* ---- 区块之间的大间距：130/168/250 统一收到 80px ---- */
-    .case-meta          { margin-bottom: 80px; }
-    .case-problem-band  { margin-bottom: 80px; }
-    .case-workflow       { margin-bottom: 80px; }
-    .case-before-band    { margin-bottom: 80px; }
-    .case-process         { margin-bottom: 80px; }
-    .case-production       { margin-bottom: 80px; }
-    .case-closing            { margin-bottom: 80px; }
+    /* ---- 区块之间的大间距：130/168/250 统一收到 100px。上一轮先统一
+       收到过 80px，其中 .case-process/.case-production 又单独放大到
+       100px；这次覆盖成全部区块统一 100px，不再有 80/100 两档 ---- */
+    .case-meta          { margin-bottom: 100px; }
+    .case-impact         { margin-bottom: 100px; }
+    .case-problem-band    { margin-bottom: 100px; }
+    .case-workflow       { margin-bottom: 100px; }
+    .case-before-band    { margin-bottom: 100px; }
+    .case-process         { margin-bottom: 100px; }
+    .case-production       { margin-bottom: 100px; }
+    .case-closing            { margin-bottom: 100px; }
 
     /* ---- 蓝色/灰色出血色带：桌面版 calc(100%+48px)/-24px 是按 main
        的桌面 padding(24px) 算的，main 在这个断点下 padding 已经改成
@@ -1008,9 +1093,17 @@ body {
     .case-improvement-title,
     .case-before-subtitle,
     .case-process-subtitle,
-    .case-production-subtitle {
+    .case-production-subtitle,
+    .case-impact-title {
         font-size: 16px;
         line-height: 22px;
+    }
+
+    /* Built with PM and engineering 区块的图片说明文字：桌面 16px，
+       手机端单独降到 14px（字重/行高维持 350/150% 不变，这个跟上面
+       "小标题"或者"标签类"都不是同一档，是它自己单独的一条） */
+    .case-impact-caption-text {
+        font-size: 14px;
     }
 
     /* ---- 区块大标题：整层级再降一档，20px/28px（上一轮先降到过
@@ -1051,18 +1144,43 @@ body {
         font-weight: 350;
     }
 
-    /* ---- 大间距整体下降：72px 收到 48px，108px 收到 72px。
-       .case-hero-img 的 72px 已经在上面单独改过了，这里是其余几处 ---- */
+    /* ---- 区块内部"小节之间"的间距：64px。.case-improvements 这次单独
+       拉大到 80px（见下面），不再跟这四个共用同一条规则 ---- */
+    .case-before-list,
+    .case-process-list,
+    .case-production-content,
+    .case-production-groups {
+        gap: 64px;
+    }
+    /* Key Workflow Improvements 三个 improvement 之间：64px 先改到过
+       80px，这次再拉大到 100px——只影响 .case-improvements 这个列表
+       容器本身，不影响 .case-improvement-cols（每个 improvement 内部
+       Problem/Solution 两组之间的间距，手机端堆叠后是另一条规则的
+       32px，没有改）。目的是拉开组间距离、收紧组内距离，让每个
+       improvement 看起来更像一个整体——组内"小标题→第一张图"这段
+       （.case-improvement-title 的 margin-bottom）检查过是 16px，
+       本来就没超过 32px，不需要再收 */
+    .case-improvements {
+        gap: 100px;
+    }
+
+    /* ---- Before Redesign 两组"描述文字→图片"的间距偏大，都收到
+       24px。.case-before-part-1（Understand...）桌面端本来就是 24px，
+       这里显式写一遍保持跟 .case-before-part-2 一致、不依赖"没被谁
+       改过"这个假设；.case-before-part-2（Remove choices...）桌面端
+       是 64px，手机端单独收到 24px ---- */
+    .case-before-part-1,
+    .case-before-part-2 {
+        gap: 24px;
+    }
+
+    /* ---- 区块大标题到下面第一个元素的间距：32px，这轮维持不变 ---- */
     .case-workflow,
     .case-before-inner,
     .case-process,
-    .case-production {
-        gap: 48px;
-    }
-    .case-improvements,
-    .case-before-list,
-    .case-process-list {
-        gap: 72px;
+    .case-production,
+    .case-closing {
+        gap: 32px;
     }
 
     /* ---- 所有横排双栏改成纵向堆叠，堆叠后每组之间 32px ----
