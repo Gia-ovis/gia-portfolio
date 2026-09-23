@@ -1000,7 +1000,7 @@ body {
 
     .case-subtitle {
         margin-top: 16px;   /* 标题 → 副标题 */
-        font-weight: 350;
+        font-weight: 500;   /* 原来是 350，跟正文统一改成 500，颜色维持 --text-secondary 不变 */
         font-size: 14px;
         line-height: 150%;
         color: var(--text-secondary);
@@ -1086,28 +1086,30 @@ body {
         padding-right: 16px;
     }
 
-    /* ---- 小标题：24px 降到 20px（Problem Overview 卡片标题
-       "📌 Problem Overview" 是 16px，不在这次要改的范围内；
-       .case-closing-body 虽然也是 24px，但它是收尾段落正文，不是小
-       标题，按"正文字号保持不变"处理，不降） ---- */
+    /* ---- 可读性回调，第一步：小标题从 16px/22px 提到 18px/25px，
+       颜色保持 var(--brand) 不变（这几个本来就是 brand 蓝，没有单独
+       声明 color 的必要，desktop 的声明会一直生效）。
+       .case-problem-card-title/.case-production-card-title（两张卡片
+       自己的小标题"📌 Problem Overview"/"🔎 Usability testing"）这次
+       不在这个范围内——它们现在跟"标签类"归在一起，见下面 ---- */
     .case-improvement-title,
     .case-before-subtitle,
     .case-process-subtitle,
     .case-production-subtitle,
     .case-impact-title {
-        font-size: 16px;
-        line-height: 22px;
+        font-size: 18px;
+        line-height: 25px;
     }
 
-    /* Built with PM and engineering 区块的图片说明文字：桌面 16px，
-       手机端单独降到 14px（字重/行高维持 350/150% 不变，这个跟上面
-       "小标题"或者"标签类"都不是同一档，是它自己单独的一条） */
+    /* Built with PM and engineering 区块的图片说明文字：这次不在你
+       点名的范围内（你列的是"各小节的描述文字/Problem-Solution正文/
+       Before-After正文/新section的正文"，这条是图片说明，不是正文），
+       维持上一轮定的 14px，没有改 */
     .case-impact-caption-text {
         font-size: 14px;
     }
 
-    /* ---- 区块大标题：整层级再降一档，20px/28px（上一轮先降到过
-       24px/33px，这次继续往下） ---- */
+    /* ---- 区块大标题：20px/28px，这轮维持不变 ---- */
     .case-workflow-title,
     .case-before-title,
     .case-process-title,
@@ -1117,31 +1119,65 @@ body {
         line-height: 28px;
     }
 
-    /* ---- 原本 16px/22px/500 的标签类文字，整层降到 14px/500/150%。
-       按数值找，不按名字找——除了你点名的 Problem:/Solution:/Before/
-       After，还有两张卡片自己的小标题("📌 Problem Overview"、
-       "🔎 Usability testing")和 rate request 那组的 Before/After
-       标签，数值上都是同一档 16px/22px/500，一并处理；.case-subtitle
-       虽然桌面端也是 16px，但手机端已经单独降到 14px 了，不在这个
-       范围内，跳过 ---- */
-    .case-problem-card-title,
+    /* ---- Problem:/Solution:/Before/After 这几个标签：14px 提到
+       16px，颜色不变（-problem/-solution/-before/-after 这几个修饰
+       class 各自管颜色，这里不碰）。"Before/After" 在 Before Redesign
+       和 rate request 两处都有，字面一样，两处都算。
+       字重/行高维持 500/150% 不变，只提字号 ---- */
     .case-improvement-label,
     .case-before-flow-label,
-    .case-process-rate-label,
+    .case-process-rate-label {
+        font-size: 16px;
+    }
+    /* .case-problem-card-title/.case-production-card-title 这两个卡片
+       自己的小标题——上一轮跟上面几个标签数值上刚好同档（16→14），
+       这次你只点名了 Problem:/Solution:/Before/After 四个标签，没有
+       提这两个卡片标题，所以从共用规则里拆出来，原样保持 14px/500/
+       150% 不动，没有跟着提到 16px。如果这两个也该跟着提，告诉我 */
+    .case-problem-card-title,
     .case-production-card-title {
         font-size: 14px;
         font-weight: 500;
         line-height: 150%;
     }
 
-    /* ---- 原本 14px/500 的正文类文字，字重降到 350（字号/行高不变）。
-       同样按数值找：.case-meta-value（元信息的内容，不是你说的 12px
-       标签那个）和 .case-problem-card-body ol（数字列表，桌面端故意
-       保持比 <p> 重一档的 500 做对比，这次一起降）都命中这一档，如果
-       这两处不是你想改的，告诉我单独排除 ---- */
-    .case-meta-value,
-    .case-problem-card-body ol {
-        font-weight: 350;
+    /* ---- 正文类：字重维持 500（上一轮 350→500 的部分保留）。颜色
+       这轮撤销——上一轮改成的 --text-primary 撤掉，退回 desktop 本来
+       的 --text-secondary（不再显式声明 color，直接不覆盖，自然继承
+       desktop 的 secondary）。覆盖的还是同一批：各小节描述文字
+       （.case-before-desc/.case-process-desc/.case-production-desc）、
+       Problem/Solution 正文（.case-improvement-body）、新 section 正文
+       （.case-impact-body），以及上一轮一起处理的 .case-closing-body ---- */
+    .case-improvement-body,
+    .case-before-desc,
+    .case-process-desc,
+    .case-production-desc,
+    .case-impact-body,
+    .case-closing-body {
+        font-weight: 500;
+    }
+    .case-before-flow-body,
+    .case-problem-card-body p,
+    .case-problem-card-body ol,
+    .case-production-card-body {
+        font-weight: 500;
+    }
+
+    /* .case-em 强调：正文现在也是 500 了，字重这一项已经不能用来区分
+       强调词，斜体单独一个特征不够明显，手机端单独把 .case-em 提到
+       600——Avenir（font-family 栈第一顺位，Mac 系统自带）大概率没有
+       独立的 600 字重，具体渲染出来是不是被浏览器合成的假粗体，需要
+       实际在浏览器里看一眼才能确定，这里没法保证 */
+    .case-em {
+        font-weight: 600;
+    }
+
+    /* ---- 元信息区：标签 12px 提到 13px（颜色保持 --text-secondary，
+       没有单独声明的必要，desktop 已经是这个颜色）；内容原来在上一轮
+       被降到过 350，这次按你说的"保持 500 字重不变"，直接不再覆盖
+       font-weight，让它退回 desktop 本来的 500 ---- */
+    .case-meta-label {
+        font-size: 13px;
     }
 
     /* ---- 区块内部"小节之间"的间距：64px。.case-improvements 这次单独
@@ -1250,12 +1286,19 @@ body {
     }
 
     /* ---- 收尾段落："Complex workflows shouldn't..." 从 Title 2(24px)
-       降级成 Text medium，颜色维持现有的 --text-secondary 不变。
-       字重这次又从 500 降到 350，跟这轮"14px/500→14px/350"那条正文
-       降级规则是同一档，归到一起改 ---- */
+       降级成 Text medium。这里只管字号/行高——字重现在由上面"正文类"
+       那条分组规则（.case-improvement-body, ..., .case-closing-body
+       { font-weight: 500; }）统一管，不在这里重复声明。
+
+       之前这里还留着一行 font-weight: 350，是好几轮前的旧值——那时候
+       正文整体是 350，这条规则跟着设成 350；后来正文改回 500，上面
+       新加了分组规则，但这条旧规则里的 font-weight: 350 一直没删，
+       因为在源码顺序上排在分组规则之后，实际生效的是这一行的 350，
+       不是分组规则的 500——.case-closing-body 手机端实际字重一直是
+       350，不是之前汇总表里写的 500。这次一并把这行删掉，字重交回
+       给上面的分组规则管，不再在两个地方重复/冲突地声明同一个属性 */
     .case-closing-body {
         font-size: 14px;
-        font-weight: 350;
         line-height: 150%;
     }
 }
