@@ -83,7 +83,22 @@
 .case-overlay-close {
     position: absolute;
     top: 24px;
-    right: 24px;
+    /* 左上角，不是右上角：content 层的 HOME/BACK 按钮也在左上，
+       "往回走"这个动作的位置在两层之间保持一致；顺带避开右下角的
+       contact dock，两个浮动控件不挤在同一侧。
+
+       40px 不是 24px（不是和原来的 right:24px 数值对称），是为了和 HOME
+       对齐：HOME 的 40px 是从「内容面板」的边算的（它是 banner 里的 flex
+       项，banner 在 <main> 里，<main> 在 .content-overlay-panel 里），这里
+       的值是从「案例面板」的边算的，两个面板都是 viewport left:40px，所以
+       主路径（index.html 浮层）下 HOME 落在 40+40=80，这里也要 40 才是 80。
+
+       代价：独立打开 content.html 时 banner 没有被面板内缩，HOME 落在 40，
+       这里仍是 80，差 40px。两个场景在数学上不可能同时对齐（案例浮层永远
+       内缩，banner 只在浮层里才内缩），独立访问是降级路径，取主路径。
+
+       panel 的 overflow:hidden 不会裁到它——按钮完整落在 panel 盒子内。 */
+    left: 40px;
     z-index: 10;
 
     width: 44px;
@@ -115,6 +130,25 @@
 }
 
 /* ============================================================
+   1024–1199px：跟着 HOME 按钮一起收。
+
+   这条断点不是这里自己的需求，是镜像 content.css:300 的
+   @media (max-width:1199px) { .banner-home { margin-left: 20px } }——
+   上面 left:40px 的整个理由就是"和 HOME 落在同一个位置"，HOME 在这一档
+   从 40 收到 20，这里不跟着收就会差 20px，那条理由在这一档就不成立了。
+   两个值是绑在一起的：以后改动其中任何一个，另一个要一起改。
+
+   必须放在下面 ≤1023px 那块之前。两条规则特异性相同，≤1023px 时两条
+   都会命中，靠源码顺序决定谁生效——放到后面会把手机端的
+   left: max(16px, env(safe-area-inset-left)) 覆盖成 20px。
+   ============================================================ */
+@media (max-width: 1199px) {
+    .case-overlay-close {
+        left: 20px;
+    }
+}
+
+/* ============================================================
    ≤1023px：面板改全屏、从底部滑入，跟桌面版"贴着第一层浮层露一圈边"
    的观感是两回事——手机屏幕本来就没有多余空间留边，全屏是标准的
    移动端"卡片从底部盖上来"模式
@@ -142,7 +176,9 @@
     .case-overlay-close {
         position: fixed;
         top: max(16px, env(safe-area-inset-top));
-        right: 16px;
+        /* 跟桌面一起挪到左上。横屏刘海机上左侧会被系统占掉一条，
+           所以跟上面的 top 用同一种写法兜底，而不是写死 16px */
+        left: max(16px, env(safe-area-inset-left));
     }
 }
 

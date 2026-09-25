@@ -1,0 +1,217 @@
+/* ============================================================
+   常驻 contact dock —— Recede 变体。
+
+   决策、被否掉的选项、以及每个数值的来历见 DECISIONS.md
+   「2026-09-25 · 常驻 contact dock」。这里只实现定下来的那一组，
+   prototype 里那套可调变量不带进来。
+
+   这份 CSS 由 contact-dock.js 在运行时自己 <link> 进 <head>，和
+   case-overlay.css 的做法一致——这样组件在 index.html 和 content.html
+   两个宿主页面上表现一致，不需要给任何一个页面加静态 <link>。
+   颜色 token 来自 content.css 的 :root（两个宿主页面都加载了它）。
+
+   分两层的原因：.contact-dock-anchor 负责定位和"该不该在场"，
+   .contact-dock 负责滚动后退的 transform/opacity——两个 transform
+   放在同一个元素上会互相覆盖。
+   ============================================================ */
+
+.contact-dock-anchor {
+    position: fixed;
+    right: max(24px, env(safe-area-inset-right));
+    bottom: max(24px, env(safe-area-inset-bottom));
+    z-index: 402;   /* 站点此前最高是 401（.case-lightbox-close） */
+
+    /* 默认不在场。visibility 而不是纯 opacity——后者会把 dock 留在
+       tab 顺序里，键盘用户会 tab 进一个看不见的东西 */
+    visibility: hidden;
+    opacity: 0;
+}
+
+/* 第 3、4 层才出现。
+   - body.overlay-open        第一层浮层（index.html 里的 Work/Sandbox/About）
+   - body.case-overlay-open   第二层浮层（案例页）
+   - [data-host="standalone"] 直接打开的 content.html，它本身就是第 3 层
+   第 1 层（雾窗）和第 2 层（window）不出现：第 2 层本来就有 .social-links，
+   再浮一个是同屏两份相同的东西。 */
+body.overlay-open .contact-dock-anchor,
+body.case-overlay-open .contact-dock-anchor,
+.contact-dock-anchor[data-host="standalone"] {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* 24px 是从"阅读面"的边算的，不是从视口算的。两个浮层面板都左右各内缩
+   40px（style.css .content-overlay-panel / case-overlay.css
+   .case-overlay-panel），所以浮层打开时要让到 64px——否则 dock 会探出
+   面板右边缘、有一截压在后面的首页背景上（1280px 宽下实测约 16px）。
+   两个面板的 bottom 都是 0，所以底部不用补。
+   content.html 独立打开时没有面板，保持 24px。 */
+body.overlay-open .contact-dock-anchor,
+body.case-overlay-open .contact-dock-anchor {
+    right: max(64px, calc(env(safe-area-inset-right) + 40px));
+}
+
+/* Coming Soon modal（content.css 里 z-index 200）打开时让开。
+   402 会浮在 modal 之上，让 modal 看起来没盖全；而且那一刻用户的
+   注意力不在联系上。层级解决不了"该不该在场"。
+
+   这里直接读弹窗自己的状态类（content.js 里 .coming-soon-scrim 的
+   .is-visible），而不是让 content.js 额外加一个 body class——后者要
+   在 open/close 两处各改一行，多一个可能和真实状态走散的副本。
+   :has() 读的就是那一个真相。不用兄弟选择器 ~ 是因为这两个元素谁先
+   被 append 到 body 取决于浮层什么时候打开，DOM 顺序不稳定。
+   放在上面那条之后，保证能盖过它。 */
+body:has(.coming-soon-scrim.is-visible) .contact-dock-anchor {
+    visibility: hidden;
+    opacity: 0;
+}
+
+/* 移动端没有纳入这个组件（见 DECISIONS.md「还没决定」）。index.html
+   在 <1024 时会跳去 mobile.html，但 content.html 没有跳转，所以这里
+   显式收口，免得窄屏直接打开 content.html 时冒出来一个没验证过的东西。 */
+@media (max-width: 1023px) {
+    .contact-dock-anchor { display: none; }
+}
+
+/* ============================================================
+   胶囊本体
+   ============================================================ */
+.contact-dock {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 4px;
+    border-radius: 999px;
+
+    background: #fff;
+    /* 三层阴影：1px ring 代替描边 + 贴身层 + 环境层。单层大阴影会显得
+       像贴上去的。和 .case-overlay-close 是同一路气质，只是拆开了 */
+    box-shadow:
+        0 0 0 1px rgba(20, 35, 50, 0.06),
+        0 2px 6px rgba(20, 35, 50, 0.06),
+        0 12px 28px -8px rgba(20, 35, 50, 0.14);
+
+    font-family: var(--font-avenir);
+    font-size: 13px;
+    line-height: 1;
+    letter-spacing: 0.01em;
+
+    transition: opacity 220ms ease-out,
+                transform 220ms ease-out,
+                box-shadow 150ms ease-out;
+}
+
+/* 滚动时后退。只动 opacity 和 transform——真正"收缩成一个图标"要动
+   width，那是布局属性，滚动中每帧重排会掉帧。
+   0.55 不是随手取的：0.28 是 prototype 出厂值，在真实内容上试下来太淡，
+   提到 0.55 让扫读过程中 dock 仍然清晰可见。见 DECISIONS.md。 */
+.contact-dock-anchor[data-scrolling] .contact-dock {
+    opacity: 0.55;
+    transform: translateY(6px) scale(0.97);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .contact-dock:hover {
+        box-shadow:
+            0 0 0 1px rgba(20, 35, 50, 0.08),
+            0 3px 8px rgba(20, 35, 50, 0.08),
+            0 16px 36px -10px rgba(20, 35, 50, 0.20);
+    }
+}
+
+/* ============================================================
+   邮箱按钮
+   ============================================================ */
+.contact-dock-email {
+    display: flex;
+    align-items: center;
+    height: 40px;          /* 桌面端最小命中区 */
+    padding: 0 14px;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text-primary);
+    font: inherit;
+    letter-spacing: inherit;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: transform 150ms ease-out,
+                background-color 150ms ease-out;
+}
+
+/* 零位移的 ✓ Copied 交换：两段文字叠在同一个 grid 格子里，格子宽度由
+   较宽的那个（邮箱）决定，切换只交叉淡入淡出。直接换 textContent 会让
+   dock 宽度从 ~170px 猛缩到 ~70px，在一个 fixed 元素上那是一次很明显
+   的抽搐。opacity 不是布局属性，所以这里宽度不可能变。 */
+.contact-dock-stack { display: grid; }
+.contact-dock-stack > span {
+    grid-area: 1 / 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+    transition: opacity 140ms ease-out;
+}
+.contact-dock-done {
+    opacity: 0;
+    color: var(--brand);
+    font-weight: 500;
+}
+.contact-dock-email[data-copied] .contact-dock-text { opacity: 0; }
+.contact-dock-email[data-copied] .contact-dock-done { opacity: 1; }
+
+/* ============================================================
+   图标链接 —— LinkedIn 在前，Resume 在后
+   ============================================================ */
+.contact-dock-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    touch-action: manipulation;
+    transition: transform 150ms ease-out,
+                background-color 150ms ease-out,
+                color 150ms ease-out;
+}
+.contact-dock-icon svg { display: block; }
+/* 两个字形的视觉重量不一样，等高会让 LinkedIn 显得偏大——按眼睛对齐 */
+.contact-dock-icon[data-icon="linkedin"] svg { height: 17px; width: auto; }
+.contact-dock-icon[data-icon="resume"]   svg { height: 19px; width: auto; }
+
+.contact-dock-sep {
+    width: 1px;
+    height: 18px;
+    margin: 0 2px;
+    background: rgba(20, 35, 50, 0.12);
+    pointer-events: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .contact-dock-email:hover { background: rgba(20, 35, 50, 0.05); }
+    .contact-dock-icon:hover  { background: rgba(20, 35, 50, 0.05); color: var(--text-primary); }
+}
+.contact-dock-email:active,
+.contact-dock-icon:active { transform: scale(0.96); }
+
+/* 中性描边，不用品牌色——彩色 focus ring 会和界面打架 */
+.contact-dock-email:focus-visible,
+.contact-dock-icon:focus-visible {
+    outline: 2px solid rgba(39, 49, 56, 0.55);
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .contact-dock,
+    .contact-dock-email,
+    .contact-dock-icon,
+    .contact-dock-stack > span { transition: none; }
+    /* 后退本身就是运动，reduced-motion 下不执行——停在实色常驻态 */
+    .contact-dock-anchor[data-scrolling] .contact-dock {
+        opacity: 1;
+        transform: none;
+    }
+}

@@ -201,37 +201,6 @@
     });
 })();
 
-
-/* ============================================================
-   Email 图标：点击复制邮箱地址到剪贴板，不是真的打开邮件客户端——
-   很多人电脑没配 Mail app，mailto: 点了没反应，复制地址体验更可靠。
-   href 还是留着 mailto:，纯粹当兜底（右键"复制链接地址"、JS 出错时
-   的降级、屏幕阅读器识别这是个邮箱链接），主流程靠 click 里的
-   preventDefault() 拦掉默认跳转，改成 clipboard API + toast 提示。
-   navigator.clipboard 在非 HTTPS/非 localhost 环境不可用（比如用
-   file:// 直接打开，或者部署到没上 HTTPS 的域名），这时候退化成
-   window.prompt 让用户自己手动复制，不会静默失败。
-   ============================================================ */
-(function () {
-    const emailLink = document.getElementById('emailLink');
-    if (!emailLink) return;
-
-    function showToast(message) {
-        const toast = document.createElement('div');
-        toast.className = 'copy-toast';
-        toast.textContent = message;
-        document.body.appendChild(toast);
-        toast.addEventListener('animationend', () => toast.remove());
-    }
-
-    emailLink.addEventListener('click', async (e) => {
-        e.preventDefault();
-        const email = emailLink.href.replace(/^mailto:/, '');
-        try {
-            await navigator.clipboard.writeText(email);
-            showToast('Email copied!');
-        } catch (err) {
-            window.prompt('Copy this email:', email);
-        }
-    });
-})();
+/* Email 图标的点击复制逻辑已提取到 copy-email.js（全站共用一份，
+   移动端 mobile.js 之前是逐字节照抄的第二份）。那个文件自己会找
+   #emailLink 接线，这里不需要再做任何事。 */
