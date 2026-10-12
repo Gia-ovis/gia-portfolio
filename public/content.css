@@ -31,29 +31,46 @@
    排查结论：任务原文给的示例写的是 `src: local('Caveat')`，只写
    local() 没有 url() 兜底——实测发现这样写在几乎所有真实用户的设备上
    都会失效。local() 只匹配"系统里已经安装的、名字叫 Caveat 的字体"，
-   Caveat 是通过下面这条 <link> 从 Google Fonts 下载的网络字体，不是
-   本地安装的系统字体，两者是完全不同的两件事——绝大多数访客的电脑上
-   根本没有本地安装的 Caveat，local('Caveat') 会直接匹配失败，导致
+   Caveat 不是本地安装的系统字体，而是要下载的网络字体，这是完全不同的
+   两件事。绝大多数访客的电脑上根本没有本地安装的 Caveat，
+   local('Caveat') 会直接匹配失败，导致
    'Caveat-Adjusted' 这个别名整体失效，直接跳过去用最后的兜底
    cursive，size-adjust 完全不会生效。
-   改成直接引用 Google Fonts 实际下发的字体文件 url()——用 curl 抓了一遍
-   https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700
-   这条链接实际返回的内容，确认 Caveat 在 Google Fonts 上是可变字体
-   (variable font)：400/500/600/700 四个字重请求到的是同一个 latin
-   子集 woff2 文件(Wnz6HAc5bAfYB2Q7ZjYYiAzcPA.woff2)，字重差异由字体
-   文件内部的可变轴表现，不是四个不同文件——所以这里只需要一条
-   @font-face，用 font-weight:400 700 声明整个区间即可覆盖项目里实际
-   用到的四个字重(400/500/600/700)，不用重复写四份。
-   src 列表里 local('Caveat') 还是留着放在最前面(万一真有访客本地装了
-   同名字体，优先用本地的，省一次网络请求)，url() 作为紧接着的真正兜底，
-   不是像原方案那样只有 local() 一条路 */
+   所以必须有真正的字体文件做兜底。
+
+   字体现在是自托管的，不再走 Google Fonts。原因是 fonts.googleapis.com
+   和 fonts.gstatic.com 在中国大陆被屏蔽，而原来那条 <link rel="stylesheet">
+   是渲染阻塞的，大陆访客要等到 TCP 超时才会看到内容。
+   assets/fonts/caveat-latin-var.woff2 就是 Google Fonts 原本下发的那个
+   文件(Wnz6HAc5bAfYB2Q7ZjYYiAzcPA.woff2)原样保存下来的，字节一致，
+   所以渲染结果和自托管之前完全相同。
+
+   Caveat 在 Google Fonts 上是可变字体(variable font)：400/500/600/700
+   四个字重请求到的是同一个 latin 子集文件，字重差异由字体内部的可变轴
+   表现，不是四个不同文件——所以只需要一条 @font-face，用
+   font-weight:400 700 声明整个区间即可覆盖项目里用到的四个字重。
+   src 列表里 local('Caveat') 留在最前面(万一真有访客本地装了同名字体，
+   优先用本地的，省一次请求)，url() 是紧接着的真正兜底 */
 @font-face {
     font-family: 'Caveat-Adjusted';
     src: local('Caveat'),
-         url('https://fonts.gstatic.com/s/caveat/v23/Wnz6HAc5bAfYB2Q7ZjYYiAzcPA.woff2') format('woff2');
+         url('assets/fonts/caveat-latin-var.woff2') format('woff2');
     font-weight: 400 700;
     font-display: swap;
     size-adjust: 115%;   /* 115% 是先给的起点，具体数值待视觉对比后确认，见任务报告里的候选截图 */
+}
+
+/* Montserrat 500：--font-display 这个 token 的首选字体，全站 7 处用到，
+   每一处都是 font-weight:500，所以只需要这一个字重的文件。
+   同样是从 Google Fonts 原样保存下来的 latin 子集，字节一致。
+   没有 size-adjust：Montserrat 是直接指定的字体，不是谁的后备，
+   不需要跟另一个字体对齐视觉尺寸 */
+@font-face {
+    font-family: 'Montserrat';
+    src: url('assets/fonts/montserrat-500-latin.woff2') format('woff2');
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
 }
 
 body {

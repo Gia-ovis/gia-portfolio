@@ -30,11 +30,6 @@ from), `filter-tuner.js` (superseded by `debug-panel.js`), `prototype-contact.ht
 (the contact-dock variant picker, see DECISIONS.md), and `whole_window.svg` (an
 orphan asset with zero references). None of these are loaded by the site.
 
-`debug-panel.js` stays in `public/` but `index.html` no longer loads it with a plain
-`<script>` tag: it is injected only when `location.hostname` is `localhost` or
-`127.0.0.1`, so production visitors never download it and the D key does nothing.
-That hostname test mirrors the one in `analytics.js`; change them together.
-
 **Cloudflare Pages settings:**
 
 | Field | Value |
@@ -51,12 +46,6 @@ publicly readable at `<domain>/CLAUDE.md`.
 
 `.vscode/settings.json` sets `liveServer.settings.root` to `/public` so local preview
 matches. These two settings are the same decision expressed twice; change them together.
-
-**Heads up on GitHub Pages:** this repo also publishes to GitHub Pages at
-`https://gia-ovis.github.io/gia-portfolio/`, served from the **`main` branch root**.
-That setup is incompatible with this layout: once `main` has everything under
-`public/`, the GitHub Pages site 404s. The restructure therefore lives on the
-`cloudflare-deploy` branch. Decide what happens to GitHub Pages before merging.
 
 
 | File | Role |
@@ -142,6 +131,22 @@ Nothing else needs to change — not `overlay.js`, not `index.html` (its `case-o
 --font-display: "Montserrat", "Avenir Next", sans-serif;
 ```
 
+**Webfonts are self-hosted, not loaded from Google Fonts** (changed 2026-10-12).
+`fonts.googleapis.com` and `fonts.gstatic.com` are blocked in mainland China, and the
+old `<link rel="stylesheet">` was render-blocking, so mainland visitors sat on a blank
+page until it timed out. The two `@font-face` rules now live at the top of `content.css`
+(which all four pages load) and point at `assets/fonts/`:
+
+| File | Family | Weight | Size |
+|---|---|---|---|
+| `caveat-latin-var.woff2` | `Caveat-Adjusted` | `400 700` (variable axis) | 72.8 KB |
+| `montserrat-500-latin.woff2` | `Montserrat` | `500` | 16.0 KB |
+
+Both are the exact latin-subset files Google Fonts was serving, saved byte for byte, so
+rendering is unchanged. Monda used to be requested too and was dropped: no `font-family`
+anywhere referenced it. If you add a weight or a family, download the subset into
+`assets/fonts/` and add a `@font-face`; do not re-add a Google Fonts `<link>`.
+
 Other fonts in use, not tokenized as variables:
 - **HanziPen TC** (`"HanziPen TC", "HanziPen SC", "Yuanti TC", cursive`) — the handwritten look. Used for the fog-canvas words (`fog.js`), the "Gia Wang" signature, and the About-page info-card values. It's a local system font (macOS), not a webfont — no loading delay, but won't render as-designed on a system that lacks it.
 - **Hiragino Sans GB W3** (`"Hiragino Sans GB", "Hiragino Sans GB W3", "PingFang SC", "Helvetica Neue", sans-serif`) — `content.html`'s `<body>` base font stack.
@@ -185,6 +190,12 @@ Confirmed from the code:
 
 Not confirmed in code — stated by the user, unverified against any config/CI file:
 - **Mobile/responsive**: partial coverage exists (`@media` breakpoints in both stylesheets handle the Work banner, the About gallery falling back to a stacked vertical layout below 768px, and the homepage window layout below 800px) — but this hasn't been audited section-by-section for completeness. Treat "responsive polish" as in-progress, not done.
-- **Deployment**: no GitHub Pages config, no `.git`, no CI file exists yet. GitHub Pages is the stated intended target but nothing in the repo confirms setup has started.
+- **Deployment**: target is **Cloudflare Pages**, not GitHub Pages. Settings are in §2.0.
+  The repo is prepared for it (public/ split, self-hosted fonts, `public/_headers` cache
+  rules) but **nothing has been deployed yet** and no custom domain is connected.
+  Worth knowing before promising mainland performance: Cloudflare's China Network needs an
+  enterprise plan plus an ICP licence, so on the free plan mainland visitors are served
+  from Hong Kong / Tokyo / Singapore / US edges. Removing the blocked Google Fonts request
+  fixes the blank-page-until-timeout problem; it does not make the site mainland-fast.
 
 If you complete or discover something in these areas, update this section rather than leaving it stale.

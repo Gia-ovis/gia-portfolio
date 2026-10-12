@@ -5,9 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="content.css">
 <link rel="stylesheet" href="drayeasy.css">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Monda:wght@500;600&family=Montserrat:wght@500&family=Caveat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- 字体不再外链 Google Fonts：Montserrat 500 和 Caveat 的 latin 子集已经
+     自托管在 assets/fonts/ 下，由 content.css 里的两条 @font-face 引用。
+     原来那条 <link rel="stylesheet"> 是渲染阻塞的，而 fonts.googleapis.com
+     在中国大陆被屏蔽，大陆访客要等它超时才看得到内容。Monda 一并去掉了，
+     全站没有任何 font-family 引用过它。 -->
 <title>Gia Wang - DrayEasy</title>
 <!-- 只在这个文件被直接打开这个退化兜底路径下才会执行——被 case-overlay.js
      fetch 进第二层浮层时只取 <main>，这个 <head> 不会跟着生效 -->

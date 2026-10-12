@@ -537,7 +537,7 @@ main { padding: 0; }
     height: 166px;
     left: 0;
     top: 0;
-    background-image: url("assets/images/drayeasy/homepage prototype.gif");
+    background-image: url("assets/images/drayeasy/homepage prototype.webp");
     background-size: cover;
     background-position: center;
     border: 1px solid var(--brand);
@@ -552,7 +552,7 @@ main { padding: 0; }
     height: 137px;
     left: 170px;
     top: 50px;
-    background-image: url("assets/images/drayeasy/request rate prototype.gif");
+    background-image: url("assets/images/drayeasy/request rate prototype.webp");
     background-size: cover;
     background-position: center;
     border: 1px solid var(--brand);
@@ -759,7 +759,7 @@ main { padding: 0; }
     box-sizing: border-box;
     width: 95px;
     height: 196px;
-    background-image: url("assets/images/mc/mobile prototype3.gif");
+    background-image: url("assets/images/mc/mobile prototype3.webp");
     background-size: cover;
     background-position: center;
     border: 1px solid var(--brand);
@@ -770,7 +770,7 @@ main { padding: 0; }
     box-sizing: border-box;
     width: 261px;
     height: 196px;
-    background-image: url("assets/images/mc/dashboard prototype.gif");
+    background-image: url("assets/images/mc/dashboard prototype.webp");
     background-size: cover;
     background-position: center;
     border: 1px solid var(--brand);
@@ -1116,7 +1116,7 @@ main { padding: 0; }
     height: 180px;
     left: 0px;
     top: 20px;
-    background-image: url("assets/images/beyond fingers/Beyond fingers prototype crop.gif");
+    background-image: url("assets/images/beyond fingers/Beyond fingers prototype crop.webp");
     background-size: cover;
     background-position: center;
     border: 1px solid var(--brand);
@@ -1341,12 +1341,12 @@ main { padding: 0; }
 .mini-card-image--2 {
     width: 354px;
     height: 212.14px;
-    background-image: url("assets/images/winter record/thumbnail.gif");
+    background-image: url("assets/images/winter record/thumbnail.webp");
 }
 .mini-card-image--3 {
     width: 225px;
     height: 193px;
-    background-image: url("assets/images/cube/main screen prototype.gif");
+    background-image: url("assets/images/cube/main screen prototype.webp");
 }
 .mini-card-image--4 {
     width: 362px;

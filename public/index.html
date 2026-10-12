@@ -30,16 +30,11 @@
          这套排版）的样式，overlay.js 会把 content.html 里对应的 section
          原样搬进浮层——style 得跟着一起加载，不然浮层里全是没样式的裸标签 -->
     <link rel="stylesheet" href="content.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <!-- Caveat 是给 HanziPen TC(手写体，签名/info card 值/... 用) 加的
-         后备字体——HanziPen TC 是 macOS 本地系统字体，非 mac 设备加载
-         不出来，Caveat 是 Google Fonts，跨平台保底能显示手写体效果。
-         合并进已有的这一条 <link> 里（跟 Monda/Montserrat 用同一次
-         请求），不单独再起一条 preconnect+link，避免重复请求；字重
-         400/500/600/700 全部要——HanziPen TC 原来在各处用到的字重
-         (400/600/700)都在这个范围内，500 是多请求的一档，不影响 -->
-    <link href="https://fonts.googleapis.com/css2?family=Monda:wght@500;600&family=Montserrat:wght@500&family=Caveat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- 字体不再外链 Google Fonts：Montserrat 500 和 Caveat 的 latin 子集已经
+         自托管在 assets/fonts/ 下，由 content.css 里的两条 @font-face 引用。
+         原来那条 <link rel="stylesheet"> 是渲染阻塞的，而 fonts.googleapis.com
+         在中国大陆被屏蔽，大陆访客要等它超时才看得到内容。Monda 一并去掉了，
+         全站没有任何 font-family 引用过它。 -->
     <title>Gia Wang - Product Designer</title>
 </head>
 <body class="intro">
@@ -205,7 +200,7 @@
     <div class="avatar" role="button" tabindex="0" aria-label="Enter the wall">
         <div class="avatar-flip">
             <div class="face front">
-                <img src="assets/images/icons/selfie.png" alt="Gia Wang">
+                <img src="assets/images/icons/selfie.webp" alt="Gia Wang">
             </div>
             <div class="face back">
                 <img src="assets/images/icons/logo.svg" alt="">
