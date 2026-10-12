@@ -18,7 +18,7 @@
 (function () {
 
     const EMAIL    = 'yajiawang@outlook.com';
-    const RESUME   = 'https://drive.google.com/file/d/1mZ0AwV6WGktWj8Gu-W5623a-AgKLKUeA/view?usp=share_link';
+    const RESUME   = 'https://drive.google.com/file/d/1-Kuze-pozkTk1fZhq8jLPiIY25FQDCHn/view?usp=share_link';
     const LINKEDIN = 'https://www.linkedin.com/in/yajia-wang-88b97326a';
 
     const RESTORE_DELAY = 450;    /* 停止滚动多久后回到常驻态 */
