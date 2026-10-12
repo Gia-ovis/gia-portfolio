@@ -1,5 +1,5 @@
 /* ============================================================
-   Case study 第二层浮层的壳子（scrim + panel + 右上角关闭按钮）。
+   Case study 第二层浮层的壳子（scrim + panel + 左上角关闭按钮）。
    由 case-overlay.js 动态 <link> 进页面，两种宿主页面（独立访问的
    content.html，或被 clone 进 index.html 第一层浮层）都会用到同一份。
 
@@ -69,6 +69,14 @@
     .case-overlay-panel {
         transition: none;
     }
+    /* 关闭按钮的 scale(0.96) 是真实位移，跟 .contact-dock 一样要有
+       reduced-motion 路径 */
+    .case-overlay-close {
+        transition: none;
+    }
+    .case-overlay-close:active {
+        transform: none;
+    }
 }
 
 .case-overlay-body {
@@ -76,9 +84,9 @@
     overflow-y: auto;
 }
 
-/* 右上角 X：panel 的直接子元素，不在 .case-overlay-body 里面——这样
-   不管 case study 内容滚多远，按钮始终钉在 panel 右上角，不跟着滚走。
-   position:absolute 相对 panel(position:fixed) 定位，24px+44px 的量
+/* 左上角 X：panel 的直接子元素，不在 .case-overlay-body 里面——这样
+   不管 case study 内容滚多远，按钮始终钉在 panel 左上角，不跟着滚走。
+   position:absolute 相对 panel(position:fixed) 定位，40px+44px 的量
    远小于 panel 实际渲染的宽高，不会被 panel 的 overflow:hidden 裁到 */
 .case-overlay-close {
     position: absolute;
@@ -113,20 +121,45 @@
     justify-content: center;
 
     color: var(--text-primary);
-    background: rgba(255, 255, 255, 0.92);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
 
-    transition: box-shadow 0.2s ease, background 0.2s ease;
+    /* 表面/阴影/状态整套对齐 .contact-dock（contact-dock.css）——两者是
+       同一类浮层控件、现在还同屏出现，之前是两套做法。改动的六项：
+       三层阴影、去掉 blur 改纯白、150ms ease-out、按压、focus、hover 门控。
+
+       去掉 backdrop-filter 不只是为了统一：这个按钮是案例浮层唯一的出口，
+       属于"必须被看见"的控件，融进背景没有收益；而原来的 0.92 压在案例页
+       那种满屏截图上，实际观感已经接近纯白，blur 只是白付了一次 Safari 上
+       比较贵的合成。 */
+    background: #fff;
+    box-shadow:
+        0 0 0 1px rgba(20, 35, 50, 0.06),
+        0 2px 6px rgba(20, 35, 50, 0.06),
+        0 12px 28px -8px rgba(20, 35, 50, 0.14);
+
+    transition: transform 150ms ease-out,
+                background-color 150ms ease-out,
+                box-shadow 150ms ease-out;
 }
 .case-overlay-close svg {
     width: 18px;
     height: 18px;
 }
-.case-overlay-close:hover {
-    background: #fff;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+/* hover 门控：触屏设备点一下会触发 :hover 并卡在那个态，直到点别处。
+   底色已经是纯白，所以 hover 只抬阴影，跟 .contact-dock 一致 */
+@media (hover: hover) and (pointer: fine) {
+    .case-overlay-close:hover {
+        box-shadow:
+            0 0 0 1px rgba(20, 35, 50, 0.08),
+            0 3px 8px rgba(20, 35, 50, 0.08),
+            0 16px 36px -10px rgba(20, 35, 50, 0.20);
+    }
+}
+.case-overlay-close:active { transform: scale(0.96); }
+
+/* 中性描边，不用品牌色——彩色 focus ring 会和界面打架 */
+.case-overlay-close:focus-visible {
+    outline: 2px solid rgba(39, 49, 56, 0.55);
+    outline-offset: 2px;
 }
 
 /* ============================================================
