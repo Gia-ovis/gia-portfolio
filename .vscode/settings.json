@@ -1,0 +1,6 @@
+{
+    // 站点文件在 public/ 下，Live Server 的根目录要跟着指过去，
+    // 否则预览时所有相对路径（assets/... 等）都会 404。
+    // 这个值跟 Cloudflare Pages 的 Build output directory 是同一件事。
+    "liveServer.settings.root": "/public"
+}

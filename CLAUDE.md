@@ -6,9 +6,58 @@ This file is for AI assistants working in this repo, not for site visitors. Read
 
 A personal portfolio site for a UX/HCI designer, aimed at design roles — music tech companies and B2B SaaS in particular (that context shapes some copy/tone choices, see §4). Static HTML/CSS/JS, no build step, no framework, no dependencies beyond two Google Fonts (Monda, Montserrat) and system fonts for the rest. Everything runs directly off the filesystem or a plain static server.
 
-**Not a git repo currently** (`git status` was checked at the time of writing — no `.git`). If that's still true when you start, treat any git-related instructions from the user as "set this up first," not "assume history exists."
+**This is a git repo** (corrected 2026-10-12; an earlier version of this file said it was not). Remote is `origin` → `https://github.com/Gia-ovis/gia-portfolio.git`, default branch `main`.
 
 ## 2. File structure (verified against the actual repo, not assumed)
+
+### 2.0 Repository layout (restructured 2026-10-12 for Cloudflare Pages)
+
+The repo root is **not** the site root any more. Three top-level directories:
+
+```
+public/     ← the deployable site. Everything here is published.
+dev/        ← prototypes and dead files. Never published.
+.vscode/    ← Live Server config
+CLAUDE.md, DECISIONS.md, .gitignore   ← repo-level, not published
+```
+
+**Every path in the file table below is relative to `public/`.** `index.html` is
+`public/index.html`, `assets/` is `public/assets/`, and so on. Relative references
+inside the site are unchanged by the move, because everything moved together.
+
+`dev/` holds `fog_wipe_growing_drops.html` (the fog prototype `fog.js` was ported
+from), `filter-tuner.js` (superseded by `debug-panel.js`), `prototype-contact.html`
+(the contact-dock variant picker, see DECISIONS.md), and `whole_window.svg` (an
+orphan asset with zero references). None of these are loaded by the site.
+
+`debug-panel.js` stays in `public/` but `index.html` no longer loads it with a plain
+`<script>` tag: it is injected only when `location.hostname` is `localhost` or
+`127.0.0.1`, so production visitors never download it and the D key does nothing.
+That hostname test mirrors the one in `analytics.js`; change them together.
+
+**Cloudflare Pages settings:**
+
+| Field | Value |
+|---|---|
+| Framework preset | None |
+| Build command | **leave empty** |
+| Build output directory | **`public`** |
+| Root directory | leave empty |
+
+The site is static with no build step, so Pages serves `public/` as-is. Pointing the
+output directory at `public` is what keeps `CLAUDE.md`, `DECISIONS.md` and `dev/` off
+the public internet. If you ever move files back to the repo root, those become
+publicly readable at `<domain>/CLAUDE.md`.
+
+`.vscode/settings.json` sets `liveServer.settings.root` to `/public` so local preview
+matches. These two settings are the same decision expressed twice; change them together.
+
+**Heads up on GitHub Pages:** this repo also publishes to GitHub Pages at
+`https://gia-ovis.github.io/gia-portfolio/`, served from the **`main` branch root**.
+That setup is incompatible with this layout: once `main` has everything under
+`public/`, the GitHub Pages site 404s. The restructure therefore lives on the
+`cloudflare-deploy` branch. Decide what happens to GitHub Pages before merging.
+
 
 | File | Role |
 |---|---|

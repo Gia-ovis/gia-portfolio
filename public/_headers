@@ -1,0 +1,34 @@
+# Cloudflare Pages 缓存策略
+# 语法参考 Cloudflare Pages 的 _headers 文件；这个文件本身不会被发布出去。
+#
+# 分两档：带哈希或永不改名的静态资源用一年强缓存，HTML 用短缓存。
+# 这个站点的资源文件名里没有内容哈希（assets/images/bg image.webp 这种），
+# 所以"一年强缓存"的前提是：以后要换图就换文件名，不要原地覆盖同名文件。
+# 原地覆盖的话老访客最长一年看不到新图。
+
+# 字体：文件名里带了子集和字重（caveat-latin-var / montserrat-500-latin），
+# 内容变了必然换名，可以放心长缓存。immutable 让浏览器连条件请求都不发。
+/assets/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# 图片和视频：同上，换图请换文件名
+/assets/images/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# CSS 和 JS 都在站点根目录且没有哈希，改代码是原地覆盖同名文件，
+# 所以不能用 immutable。max-age=0 + must-revalidate 让浏览器每次都带
+# If-None-Match 问一次，没变就是 304，几乎不耗流量，改了立刻生效。
+# Cloudflare 边缘节点仍然会缓存（s-maxage），回源压力不变。
+/*.css
+  Cache-Control: public, max-age=0, must-revalidate
+  
+/*.js
+  Cache-Control: public, max-age=0, must-revalidate
+
+# HTML：短缓存。理由同上，而且 HTML 是所有资源引用的入口，
+# 它过期了新的 CSS/JS/图片文件名才能被发现。
+/*.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+/
+  Cache-Control: public, max-age=0, must-revalidate

@@ -231,10 +231,19 @@
 <script src="copy-email.js"></script>
 <script src="script.js"></script>
 <script src="fog.js"></script>
-<!-- 擦玻璃效果的实时调参面板，纯开发用——按 D 键显示/隐藏，默认不可见。
-     完全独立于正式逻辑（读写 fog.js 暴露的 window.FOG_CONFIG /
-     window.__fogHardResetAll），删掉这一行不影响 fog.js 任何行为 -->
-<script src="debug-panel.js"></script>
+<!-- 擦玻璃效果的实时调参面板，纯开发用（按 D 键显示/隐藏，默认不可见）。
+     完全独立于正式逻辑，只读写 fog.js 暴露的 window.FOG_CONFIG /
+     window.__fogHardResetAll，不加载它不影响 fog.js 任何行为。
+
+     只在本机预览时注入：线上访客不会下载这个文件，也不会有 D 键面板。
+     判断条件跟 analytics.js 里跳过 GA 的那条保持一致（localhost /
+     127.0.0.1），两边改的时候记得一起改。
+     文件本身留在 public/ 里，本机通过 Live Server 访问时才取得到。 -->
+<script>
+    if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
+        document.write('<script src="debug-panel.js"><\/script>');
+    }
+</script>
 <script src="grid.js"></script>
 <!-- content.js 现在暴露 window.initContentScrollSpy，浮层内容注入后
      overlay.js 要用它重新建立 banner crossfade 这套逻辑（克隆 DOM
@@ -253,7 +262,8 @@
 <script src="case-overlay.js"></script>
 <script src="overlay.js"></script>
 <script src="contact-dock.js"></script>
-<!-- <script src="filter-tuner.js"></script> -->
+<!-- filter-tuner.js 已废弃，被 debug-panel.js 的「窗户滤镜」分组取代，
+     文件现在在仓库根的 dev/ 下，不随站点发布。这行只作存档，不要取消注释。 -->
 
 </body>
 </html>
