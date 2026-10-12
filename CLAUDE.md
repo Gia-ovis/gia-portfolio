@@ -153,6 +153,43 @@ Other fonts in use, not tokenized as variables:
 
 New colors: reuse or extend the existing token set before inventing a new hex value. If you do add one, add it as a `--token-name` in `:root`, not a bare hex scattered through rules.
 
+## 3.1 Animated images: lossless WebP, and the `-min_size` trap
+
+The animated thumbnails in Work and Sandbox are UI screen recordings: flat colour
+areas, sharp edges, lots of small text. **Encode these as lossless animated WebP, not
+lossy.** Lossy WebP softens text edges badly enough to notice at normal viewing size;
+a lossy q75 pass was built, rejected on sight, and replaced. Comparison crops at 4x
+are kept in `dev/webp-compare/` if you need to see the difference again.
+
+The command is:
+
+```
+gif2webp -min_size -m 6 -mt "input.gif" -o "output-lossless.webp"
+```
+
+Three things that are easy to get wrong:
+
+- **There is no `-lossless` flag.** Lossless is `gif2webp`'s default; `-lossy` is what
+  you opt into. Passing `-lossless` fails with "Unknown option".
+- **`-min_size` is not optional.** Without it `gif2webp` inserts key frames at regular
+  intervals, which forces full-frame encodes and destroys the frame-to-frame deltas the
+  GIF already had. On `cube/main screen prototype.gif` that was 7727 KB without the flag
+  versus 451 KB with it, a 17x difference, for byte-identical pixels. It cannot affect
+  quality in lossless mode, so there is no tradeoff to weigh.
+- **Lossy is not the smaller option here.** For this content a q92 pass came out at
+  23.06 MB across the seven files, larger than the 21.72 MB of source GIFs and larger
+  than the 16.36 MB lossless pass. VP8L handles flat synthetic UI better than VP8 does
+  at high quality. Do not assume lossy wins on size; measure.
+
+Pillow cannot do this job: its WebP encoder ignores `sharp_yuv` and produces much worse
+animated output than `gif2webp`. Install libwebp (`brew install webp`) rather than
+reaching for Pillow.
+
+**Never overwrite a published image in place.** `public/_headers` serves
+`/assets/images/*` with `max-age=31536000, immutable`, so a same-name replacement leaves
+existing visitors on the old file for up to a year. Give the new encode a new filename
+(that is why the live files carry a `-lossless` suffix) and update the references.
+
 ## 4. Content/copy principles
 
 - No hype/marketing tone, no clichés ("cutting-edge," "revolutionary," "passionate about," etc.).
